@@ -63,9 +63,9 @@ Player::Player(QWidget *parent)
   // QTimer *timer = new QTimer(this);
 
   // Set icons
-  close_pushButton->setIcon(IconLoader::load("close", IconLoader::LightDark));
+  close_pushButton->setIcon(IconLoader::load("edit-close", IconLoader::LightDark));
   expand_collapse_PushButton->setIcon(
-      IconLoader::load("expand", IconLoader::LightDark));
+      IconLoader::load("edit-expand", IconLoader::LightDark));
   previous_pushButton->setIcon(
       IconLoader::load("media-skip-backward", IconLoader::LightDark));
   play_pause_pushButton->setIcon(
@@ -272,11 +272,11 @@ void Player::resizeEvent(QResizeEvent *) {
 void Player::expandCollapse() {
   if (this->width() != this->height()) {
     this->setFixedHeight(this->width());
-    expand_collapse_PushButton->setIcon(QIcon(":/compact/collapse.png"));
+    expand_collapse_PushButton->setIcon(IconLoader::load("edit-collapse", IconLoader::LightDark));
   } else {
     this->setFixedHeight(61);
     // this->resize(this->width(), 61);
-    expand_collapse_PushButton->setIcon(QIcon(":/compact/expand.png"));
+    expand_collapse_PushButton->setIcon(IconLoader::load("edit-expand", IconLoader::LightDark));
   }
 }
 

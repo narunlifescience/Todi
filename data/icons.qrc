@@ -1,15 +1,26 @@
 <RCC>
     <qresource prefix="/">
-        <file>icons/dark/16/close.png</file>
-        <file>icons/dark/16/expand.png</file>
-        <file>icons/dark/16/collapse.png</file>
-        <file>icons/dark/16/media-skip-forward.png</file>
-        <file>icons/dark/16/media-playback-pause.png</file>
-        <file>icons/dark/16/media-playback-start.png</file>
-        <file>icons/dark/16/media-skip-backward.png</file>
-        <file>icons/dark/16/media-playback-volume.png</file>
-        <file>icons/dark/16/edit-find.png</file>
-        <file>icons/dark/16/view-media-playlist.png</file>
+        <file>icons/dark/edit-close.svg</file>
+        <file>icons/dark/edit-expand.svg</file>
+        <file>icons/dark/edit-collapse.svg</file>
+        <file>icons/dark/media-skip-forward.svg</file>
+        <file>icons/dark/media-playback-pause.svg</file>
+        <file>icons/dark/media-playback-start.svg</file>
+        <file>icons/dark/media-skip-backward.svg</file>
+        <file>icons/dark/media-playback-volume.svg</file>
+        <file>icons/dark/edit-find.svg</file>
+        <file>icons/dark/view-media-playlist.svg</file>
+        <file>icons/light/edit-close.svg</file>
+        <file>icons/light/edit-expand.svg</file>
+        <file>icons/light/edit-collapse.svg</file>
+        <file>icons/light/media-skip-forward.svg</file>
+        <file>icons/light/media-playback-pause.svg</file>
+        <file>icons/light/media-playback-start.svg</file>
+        <file>icons/light/media-skip-backward.svg</file>
+        <file>icons/light/media-playback-volume.svg</file>
+        <file>icons/light/edit-find.svg</file>
+        <file>icons/light/view-media-playlist.svg</file>
+        <file>icons/nocover.png</file>
         <file>icons/vtv.png</file>
     </qresource>
 </RCC> 

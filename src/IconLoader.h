@@ -49,7 +49,6 @@ class IconLoader {
     Indiscriminate = 2,
   };
 
-  static QList<int> sizes_;
   static QList<QString> icon_path_;
 };
 

@@ -22,12 +22,9 @@
 #include <QtDebug>
 
 int IconLoader::lumen_;
-QList<int> IconLoader::sizes_;
 QList<QString> IconLoader::icon_path_;
 
 void IconLoader::init() {
-  sizes_.clear();
-  sizes_ << 16 << 22 << 24;
   icon_path_.clear();
   icon_path_ << ":icons/dark"
              << ":icons/light"
@@ -61,22 +58,12 @@ QIcon IconLoader::load(const QString& name, const IconMode& iconMode) {
       break;
   }
 
-  const QString locate(filename + "/%1/%2.%3");
-  for (int i = 0; i < sizes_.size(); i++) {
-    const QString filename_custom_png(
-        locate.arg(sizes_.at(i)).arg(name).arg("png"));
+  const QString locate(filename + "/%1.%2");
+  const QString filename_custom_png(locate.arg(name).arg("svg"));
 
-    // First check if a png file is available
-    if (QFile::exists(filename_custom_png)) {
-      ret.addFile(filename_custom_png, QSize(sizes_.at(i), sizes_.at(i)));
-    } else {
-      const QString filename_custom_svg(
-          locate.arg(sizes_.at(i)).arg(name).arg("svg"));
-      // Then check if an svg file is available
-      if (QFile::exists(filename_custom_svg)) {
-        ret.addFile(filename_custom_svg, QSize(sizes_.at(i), sizes_.at(i)));
-      }
-    }
+  // First check if a png file is available
+  if (QFile::exists(filename_custom_png)) {
+    ret.addFile(filename_custom_png);
   }
 
   // if no icons are found, then...
