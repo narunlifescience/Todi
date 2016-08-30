@@ -1,2 +1,2 @@
-# todi
+# Todi
 Mpris client

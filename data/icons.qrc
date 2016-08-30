@@ -1,0 +1,15 @@
+<RCC>
+    <qresource prefix="/">
+        <file>icons/dark/16/close.png</file>
+        <file>icons/dark/16/expand.png</file>
+        <file>icons/dark/16/collapse.png</file>
+        <file>icons/dark/16/media-skip-forward.png</file>
+        <file>icons/dark/16/media-playback-pause.png</file>
+        <file>icons/dark/16/media-playback-start.png</file>
+        <file>icons/dark/16/media-skip-backward.png</file>
+        <file>icons/dark/16/media-playback-volume.png</file>
+        <file>icons/dark/16/edit-find.png</file>
+        <file>icons/dark/16/view-media-playlist.png</file>
+        <file>icons/vtv.png</file>
+    </qresource>
+</RCC> 
