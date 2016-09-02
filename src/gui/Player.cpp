@@ -39,8 +39,8 @@
 #include <QWheelEvent>
 #include <memory>
 
-#include "MpdConnectionDialog.h"
 #include "AboutDialog.h"
+#include "MpdConnectionDialog.h"
 #include "globals.h"
 #include "lib/mpdparseutils.h"
 #include "lib/mpdstats.h"
@@ -74,9 +74,11 @@ Player::Player(QWidget *parent)
       volume_slider(new QSlider(Qt::Horizontal, volume_slider_frame)),
       resize_status(false) {
   ui_->setupUi(this);
-  this->resize(this->width(), 61);
 
+  IconLoader::init();
   IconLoader::lumen_ = IconLoader::isLight(Qt::black);
+
+  this->resize(this->width(), 61);
   this->setAttribute(Qt::WA_TranslucentBackground, true);
   setWindowTitle(tr("Todi"));
   setWindowIcon(QIcon(":icons/todi.svg"));
@@ -205,7 +207,6 @@ Player::Player(QWidget *parent)
   volume_slider->setMinimum(0);
   volume_slider->setMaximum(100);
 
-  connect(volume_pushButton, SIGNAL(clicked()), this, SLOT(showVolumeSlider()));
   QHBoxLayout *volumeslider = new QHBoxLayout(volume_slider_frame);
   volumeslider->addWidget(volume_slider);
 
@@ -220,8 +221,8 @@ Player::Player(QWidget *parent)
   // Set connection data
   QSettings settings;
   settings.beginGroup("mpd-server-connection");
-  Todi::hostname = settings.value("host").toString();
-  Todi::port = static_cast<quint16>(settings.value("port").toUInt());
+  Todi::hostname = settings.value("host", "localhost").toString();
+  Todi::port = static_cast<quint16>(settings.value("port", 6600).toUInt());
   settings.endGroup();
   mpd.setHostname(Todi::hostname);
   mpd.setPort(Todi::port);
@@ -244,8 +245,8 @@ Player::Player(QWidget *parent)
   }
 
   // MPD
-  connect(&mpd, SIGNAL(statsUpdated()), this, SLOT(updateStats()));
-  connect(&mpd, SIGNAL(statusUpdated()), this, SLOT(updateStatus()),
+  connect(&mpd, &MPDConnection::statsUpdated, this, &Player::updateStats);
+  connect(&mpd, &MPDConnection::statusUpdated, this, &Player::updateStatus,
           Qt::DirectConnection);
 
   auto quitApplication = []() { QApplication::quit(); };
@@ -255,11 +256,12 @@ Player::Player(QWidget *parent)
     std::unique_ptr<AboutDialog> abt(new AboutDialog());
     abt->exec();
   });
-  connect(expand_collapse_PushButton, SIGNAL(clicked(bool)),
-          SLOT(expandCollapse()));
+  connect(expand_collapse_PushButton, &QPushButton::clicked, this,
+          &Player::expandCollapse);
 
   // Basic media buttons
-  connect(play_pause_pushButton, SIGNAL(clicked(bool)), SLOT(playPauseTrack()));
+  connect(play_pause_pushButton, &QPushButton::clicked, this,
+          &Player::playPauseTrack);
   connect(previous_pushButton, &QPushButton::clicked, [&]() {
     mpd.goToPrevious();
     mpd.getStatus();
@@ -270,19 +272,21 @@ Player::Player(QWidget *parent)
   });
 
   // volume & track slider
-  connect(track_slider, SIGNAL(sliderPressed()), this,
-          SLOT(positionSliderPressed()));
-  connect(track_slider, SIGNAL(sliderReleased()), this, SLOT(setPosition()));
-  connect(track_slider, SIGNAL(sliderReleased()), this,
-          SLOT(positionSliderReleased()));
+  connect(track_slider, &QSlider::sliderPressed, this,
+          &Player::positionSliderPressed);
+  connect(track_slider, &QSlider::sliderReleased, this, &Player::setPosition);
+  connect(track_slider, &QSlider::sliderReleased, this,
+          &Player::positionSliderReleased);
   connect(volume_slider, &QSlider::valueChanged,
           [&](int vol) { mpd.setVolume(static_cast<quint8>(vol)); });
+  connect(volume_pushButton, &QPushButton::clicked, this,
+          &Player::showVolumeSlider);
   track_slider->setTracking(true);
   track_slider->setTickInterval(0);
 
   // Timer time out update status
-  statusTimer.start(settings.value("connection/interval", 1000).toInt());
-  connect(&statusTimer, SIGNAL(timeout()), &mpd, SLOT(getStatus()));
+  statusTimer.start(settings.value("getstatus-interval", 1000).toInt());
+  connect(&statusTimer, &QTimer::timeout, &mpd, &MPDConnection::getStatus);
 
   // update status & stats when starting the application
   mpd.getStatus();

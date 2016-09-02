@@ -49,7 +49,6 @@ void logOutput(QtMsgType type, const QMessageLogContext &context,
 }
 
 int main(int argc, char *argv[]) {
-  IconLoader::init();
   qInstallMessageHandler(logOutput);
   QApplication::setApplicationName("Todi");
   QCoreApplication::setApplicationVersion("0.01");

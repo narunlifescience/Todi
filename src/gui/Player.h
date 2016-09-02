@@ -44,13 +44,13 @@ class Player : public QWidget {
   ~Player();
 
  protected:
-  QSize sizeHint() const Q_DECL_OVERRIDE;
-  void mouseMoveEvent(QMouseEvent *event) Q_DECL_OVERRIDE;
-  void mousePressEvent(QMouseEvent *event) Q_DECL_OVERRIDE;
-  void mouseReleaseEvent(QMouseEvent *event) Q_DECL_OVERRIDE;
-  void leaveEvent(QEvent *) Q_DECL_OVERRIDE;
-  void enterEvent(QEvent *) Q_DECL_OVERRIDE;
-  void resizeEvent(QResizeEvent *) Q_DECL_OVERRIDE;
+  QSize sizeHint() const;
+  void mouseMoveEvent(QMouseEvent *event);
+  void mousePressEvent(QMouseEvent *event);
+  void mouseReleaseEvent(QMouseEvent *event);
+  void leaveEvent(QEvent *);
+  void enterEvent(QEvent *);
+  void resizeEvent(QResizeEvent *);
 
  private:
   Ui_Player *ui_;
