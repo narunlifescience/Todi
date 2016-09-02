@@ -1,26 +1,12 @@
 sudo: required
 dist: trusty
 language: c++
-
-matrix:
-  include:
-    - compiler: gcc-5
-      addons:
-        apt:
-          sources:
-            - ubuntu-toolchain-r-test
-          packages:
-            - g++-5
-            - gcc-5
-
+compiler: gcc
 
 install:
   - sudo add-apt-repository --yes ppa:beineri/opt-qt57-trusty
   - sudo apt-get update -qq
   - sudo apt-get -y install qt57[QTPACKAGE]
-  - export CXX="g++-5" 
-  - export CC="gcc-5"
-  - gcc -v
 
 script:
   - source /opt/qt57/bin/qt57-env.sh
