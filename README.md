@@ -1,6 +1,5 @@
-# [logo](data/icons/todi.png)Todi
+#![logo](data/icons/app.png) Todi
 
-[![License][license-badge]][license-page]
-[license-page]: COPYING
+[![AUR](https://img.shields.io/aur/license/yaourt.svg?maxAge=2592000)](COPYING) [![Build Status](https://travis-ci.org/narunlifescience/todi.svg?branch=master)](https://travis-ci.org/narunlifescience/todi)
 
 Graphical MPD client (Qt 5)
