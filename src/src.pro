@@ -1,6 +1,5 @@
 #Todi MPD client music player
 QT += widgets network xml
-QMAKE_CXXFLAGS += -std=c++14
 
 TARGET = Todi
 TEMPLATE = app
