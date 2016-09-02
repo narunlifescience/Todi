@@ -1,7 +1,17 @@
 sudo: required
 dist: trusty
 language: c++
-compiler: gcc-5
+compiler: gcc
+
+matrix:
+  include:
+    - compiler: gcc
+      addons:
+        apt:
+          sources:
+            - ubuntu-toolchain-r-test
+          packages:
+            - g++-5
 
 install:
   - sudo add-apt-repository --yes ppa:beineri/opt-qt57-trusty
