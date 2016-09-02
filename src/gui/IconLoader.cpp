@@ -2,18 +2,18 @@
 
    Copyright 2016, Arun Narayanankutty <n.arun.lifescience@gmail.com>
 
-   AlphaPlot is free software: you can redistribute it and/or modify
+   Todi is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation, either version 3 of the License, or
    (at your option) any later version.
-   AlphaPlot is distributed in the hope that it will be useful,
+   Todi is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
    You should have received a copy of the GNU General Public License
-   along with AlphaPlot.  If not, see <http://www.gnu.org/licenses/>.
+   along with Todi.  If not, see <http://www.gnu.org/licenses/>.
 
-   Description : AlphaPlot icon loader
+   Description : Todi icon loader
 */
 
 #include "IconLoader.h"
@@ -35,17 +35,9 @@ QIcon IconLoader::load(const QString& name, const IconMode& iconMode) {
   QIcon ret;
   // If the icon name is empty
   if (name.isEmpty()) {
-    qDebug() << "Icon name is null";
+    qWarning() << "Icon name is null";
     return ret;
   }
-
-  // comment out this for now as we dont
-  // want to load icons from system theme
-  // atleast not for now.
-  /*#if QT_VERSION >= 0x040600
-    ret = QIcon::fromTheme(name);
-    if (!ret.isNull()) return ret;
-  #endif*/
 
   QString filename;
   switch (iconMode) {
@@ -68,7 +60,7 @@ QIcon IconLoader::load(const QString& name, const IconMode& iconMode) {
 
   // if no icons are found, then...
   if (ret.isNull()) {
-    qDebug() << "Couldn't load icon" << name;
+    qWarning() << "Couldn't load icon" << name;
   }
   return ret;
 }
