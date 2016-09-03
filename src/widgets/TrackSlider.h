@@ -19,19 +19,29 @@
 #ifndef TRACKSLIDER_H
 #define TRACKSLIDER_H
 
+#include <QObject>
 #include <QSlider>
 
+class TrackSliderPopup;
+
 class TrackSlider : public QSlider {
+  Q_OBJECT
  public:
   TrackSlider(Qt::Orientation orientation, QWidget* parent = nullptr);
-  ~TrackSlider();
+
+ signals:
+  void seekForward();
+  void seekBackward();
 
  protected:
-  void enterEvent(QEvent* event) Q_DECL_OVERRIDE;
-  void leaveEvent(QEvent* event) Q_DECL_OVERRIDE;
-  void mousePressEvent(QMouseEvent* event) Q_DECL_OVERRIDE;
-  void mouseMoveEvent(QMouseEvent* event) Q_DECL_OVERRIDE;
-  void wheelEvent(QWheelEvent *event) Q_DECL_OVERRIDE;
+  void enterEvent(QEvent* event);
+  void leaveEvent(QEvent* event);
+  void mousePressEvent(QMouseEvent* event);
+  void mouseMoveEvent(QMouseEvent* event);
+  void wheelEvent(QWheelEvent* event);
+
+ private:
+  TrackSliderPopup* trackSliderPopup_;
 };
 
 #endif  // TRACKSLIDER_H

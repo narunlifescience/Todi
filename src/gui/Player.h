@@ -101,6 +101,8 @@ class Player : public QWidget {
   void stopTrack();
   void positionSliderPressed();
   void setPosition();
+  void seekBackward();
+  void seekForward();
   void positionSliderReleased();
   void setAlbumCover(QImage, QString, QString);
 

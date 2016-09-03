@@ -122,14 +122,14 @@ Player::Player(QWidget *parent)
       ".QWidget{border-radius: 3px; background-color: rgba(20, 20, 20, 200); "
       "border: 0px solid #5c5c5c;}");
   track_slider->setStyleSheet(
-      ".QSlider::groove:horizontal { border: 0px solid #999999; height: 3px; "
+      ".TrackSlider::groove:horizontal { border: 0px solid #999999; height: 3px; "
       "background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 #B1B1B1, "
       "stop:1 #c4c4c4); "
-      "margin: 0px 0; } .QSlider::handle:horizontal {"
+      "margin: 0px 0; } .TrackSlider::handle:horizontal {"
       "background: qlineargradient(x1:0, y1:0, x2:1, y2:1, stop:0 #eff0f1, "
       "stop:1 #eff0f1);"
       "border: 0px solid #5c5c5c;width: 2px;margin: -2px 0; }"
-      ".QSlider::sub-page:horizontal {"
+      ".TrackSlider::sub-page:horizontal {"
       "background: qlineargradient(x1: 0, y1: 0,    x2: 0, y2: 1,"
       "stop: 0 #3daee9, stop: 1 #3daee9); width: 3px; margin: 0px 0;}");
   close_pushButton->setStyleSheet("QPushButton{border: none;}");
@@ -272,17 +272,19 @@ Player::Player(QWidget *parent)
   });
 
   // volume & track slider
-  connect(track_slider, &QSlider::sliderPressed, this,
+  connect(track_slider, &TrackSlider::sliderPressed, this,
           &Player::positionSliderPressed);
-  connect(track_slider, &QSlider::sliderReleased, this, &Player::setPosition);
-  connect(track_slider, &QSlider::sliderReleased, this,
+  connect(track_slider, &TrackSlider::sliderReleased, this, &Player::setPosition);
+  connect(track_slider, &TrackSlider::sliderReleased, this,
           &Player::positionSliderReleased);
+  connect(track_slider, SIGNAL(seekBackward()), this, SLOT(seekBackward()));
+  connect(track_slider, SIGNAL(seekForward()), this, SLOT(seekForward()));
+  // connect(track_slider, &TrackSlider::seekBackward, this,
+  //        &Player::seekBackward);
   connect(volume_slider, &QSlider::valueChanged,
           [&](int vol) { mpd.setVolume(static_cast<quint8>(vol)); });
   connect(volume_pushButton, &QPushButton::clicked, this,
           &Player::showVolumeSlider);
-  track_slider->setTracking(true);
-  track_slider->setTickInterval(0);
 
   // Timer time out update status
   statusTimer.start(settings.value("getstatus-interval", 1000).toInt());
@@ -555,6 +557,19 @@ void Player::positionSliderPressed() { draggingPositionSlider = true; }
 void Player::setPosition() {
   mpd.setSeekId(static_cast<quint32>(MPDStatus::getInstance()->songId()),
                 static_cast<quint32>(track_slider->value()));
+  mpd.getStatus();
+}
+
+void Player::seekBackward() {
+  mpd.setSeekId(static_cast<quint32>(MPDStatus::getInstance()->songId()),
+                static_cast<quint32>(track_slider->value() - 10));
+  mpd.getStatus();
+}
+
+void Player::seekForward() {
+  mpd.setSeekId(static_cast<quint32>(MPDStatus::getInstance()->songId()),
+                static_cast<quint32>(track_slider->value() + 10));
+  mpd.getStatus();
 }
 
 void Player::positionSliderReleased() { draggingPositionSlider = false; }

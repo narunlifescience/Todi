@@ -30,9 +30,10 @@ HEADERS += gui/musiclibraryitem.h \
            gui/dirviewitemroot.h \
            gui/Player.h \
            gui/IconLoader.h \
-           gui/TrackSlider.h \
+           widgets/TrackSlider.h \
            gui/MpdConnectionDialog.h \
            gui/globals.h \
+           widgets/tracksliderpopup.h \
            lib/mpdconnection.h \
            lib/mpddatabaseconnection.h \
            lib/mpdparseutils.h \
@@ -66,9 +67,10 @@ SOURCES += main.cpp \
            gui/dirviewitemroot.cpp \
            gui/Player.cpp \
            gui/IconLoader.cpp \
-           gui/TrackSlider.cpp \
+           widgets/TrackSlider.cpp \
            gui/MpdConnectionDialog.cpp \
            gui/globals.cpp \
+           widgets/tracksliderpopup.cpp \
            lib/mpdconnection.cpp \
            lib/mpddatabaseconnection.cpp \
            lib/mpdparseutils.cpp \
