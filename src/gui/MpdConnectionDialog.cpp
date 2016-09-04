@@ -25,6 +25,7 @@
 MpdConnectionDialog::MpdConnectionDialog(QWidget *parent)
     : QDialog(parent), ui_(new Ui_MpdConnectionDialog) {
   ui_->setupUi(this);
+  setFixedSize( window()->sizeHint() );
   ui_->hostnameLabel->setAlignment(Qt::AlignRight | Qt::AlignVCenter);
   ui_->portLabel->setAlignment(Qt::AlignRight | Qt::AlignVCenter);
   ui_->passwdLabel->setAlignment(Qt::AlignRight | Qt::AlignVCenter);

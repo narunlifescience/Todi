@@ -18,7 +18,6 @@
 
 #include <stdio.h>
 #include <QMouseEvent>
-#include <QObject>
 #include <QStyle>
 #include <QStyleOptionSlider>
 

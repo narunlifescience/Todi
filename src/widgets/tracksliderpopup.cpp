@@ -18,13 +18,8 @@
 
 #include "tracksliderpopup.h"
 
-#include <QBitmap>
-#include <QCoreApplication>
 #include <QMouseEvent>
 #include <QPainter>
-#include <QTimer>
-#include <QWheelEvent>
-#include <QtDebug>
 
 const int TrackSliderPopup::kTextMargin = 4;
 const int TrackSliderPopup::kPointLength = 8;

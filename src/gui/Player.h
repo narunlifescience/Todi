@@ -34,7 +34,12 @@
 #include "lib/mpdconnection.h"
 #include "lib/mpddatabaseconnection.h"
 
+#include <QSystemTrayIcon>
+#include <QVector>
+
 class Ui_Player;
+class QHBoxLayout;
+class QVBoxLayout;
 
 class Player : public QWidget {
   Q_OBJECT
@@ -90,7 +95,12 @@ class Player : public QWidget {
   QSlider *volume_slider;
   bool resize_status;
 
+  QSystemTrayIcon *trayIcon;
+  QMenu *trayIconMenu;
+
   int showMpdConnectionDialog();
+  bool setupTrayIcon();
+  void setIconProgress(int progress);
 
  private slots:
   void expandCollapse();
@@ -105,6 +115,7 @@ class Player : public QWidget {
   void seekForward();
   void positionSliderReleased();
   void setAlbumCover(QImage, QString, QString);
+  void trayIconClicked(QSystemTrayIcon::ActivationReason reason);
 
  signals:
   void submitSong();

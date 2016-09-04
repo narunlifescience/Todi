@@ -20,6 +20,14 @@
         <file>icons/light/media-playback-volume.svg</file>
         <file>icons/light/edit-find.svg</file>
         <file>icons/light/view-media-playlist.svg</file>
+        <file>icons/tray/onebyeight.svg</file>
+        <file>icons/tray/twobyeight.svg</file>
+        <file>icons/tray/threebyeight.svg</file>
+        <file>icons/tray/fourbyeight.svg</file>
+        <file>icons/tray/fivebyeight.svg</file>
+        <file>icons/tray/sixbyeight.svg</file>
+        <file>icons/tray/sevenbyeight.svg</file>
+        <file>icons/tray/eightbyeight.svg</file>
         <file>icons/nocover.svg</file>
         <file>icons/nocover.png</file>
         <file>icons/todi.svg</file>

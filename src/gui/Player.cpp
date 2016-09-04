@@ -122,7 +122,8 @@ Player::Player(QWidget *parent)
       ".QWidget{border-radius: 3px; background-color: rgba(20, 20, 20, 200); "
       "border: 0px solid #5c5c5c;}");
   track_slider->setStyleSheet(
-      ".TrackSlider::groove:horizontal { border: 0px solid #999999; height: 3px; "
+      ".TrackSlider::groove:horizontal { border: 0px solid #999999; height: "
+      "3px; "
       "background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 #B1B1B1, "
       "stop:1 #c4c4c4); "
       "margin: 0px 0; } .TrackSlider::handle:horizontal {"
@@ -145,11 +146,11 @@ Player::Player(QWidget *parent)
   QGridLayout *baselayout = new QGridLayout(this);
   baselayout->addWidget(widget);
 
-  QVBoxLayout *closecollapselayout = new QVBoxLayout;
-  closecollapselayout->setContentsMargins(0, 3, 0, 3);
-  closecollapselayout->addWidget(close_pushButton);
-  closecollapselayout->addStretch();
-  closecollapselayout->addWidget(expand_collapse_PushButton);
+  QVBoxLayout *expandcollapsecloselayout = new QVBoxLayout;
+  expandcollapsecloselayout->setContentsMargins(0, 3, 0, 3);
+  expandcollapsecloselayout->addWidget(close_pushButton);
+  expandcollapsecloselayout->addStretch();
+  expandcollapsecloselayout->addWidget(expand_collapse_PushButton);
 
   QHBoxLayout *playerbuttonslayout = new QHBoxLayout;
   playerbuttonslayout->addWidget(previous_pushButton);
@@ -157,13 +158,13 @@ Player::Player(QWidget *parent)
   playerbuttonslayout->addWidget(next_pushButton);
 
   QHBoxLayout *slidertimerlayout = new QHBoxLayout;
-  slidertimerlayout->setContentsMargins(0, 0, 0, 3);
+  slidertimerlayout->setContentsMargins(0, 0, 3, 3);
   slidertimerlayout->setSpacing(3);
   slidertimerlayout->addWidget(track_slider);
   slidertimerlayout->addWidget(timer_label);
 
   QHBoxLayout *layout = new QHBoxLayout();
-  layout->setContentsMargins(0, 3, 0, 0);
+  layout->setContentsMargins(0, 3, 3, 0);
   layout->addStretch();
   layout->addLayout(playerbuttonslayout);
   layout->addStretch();
@@ -177,14 +178,14 @@ Player::Player(QWidget *parent)
 
   QHBoxLayout *hboxfinal = new QHBoxLayout(widget);
   // hboxfinal->setContentsMargins(3, 3, 0, 3);
-  hboxfinal->setContentsMargins(0, 0, 5, 0);
+  hboxfinal->setContentsMargins(0, 0, 0, 0);
   hboxfinal->setSpacing(5);
   // hboxfinal->addWidget(new QSizeGrip(widget), 0, Qt::AlignBottom |
   // Qt::AlignLeft);
-  hboxfinal->addLayout(closecollapselayout);
-  hboxfinal->addWidget(albumcover_label);
-  hboxfinal->addWidget(songMetadata_label);
-  hboxfinal->addLayout(vboxplaypauseslidertimer);
+  hboxfinal->addLayout(expandcollapsecloselayout, 0);
+  hboxfinal->addWidget(albumcover_label, 1);
+  hboxfinal->addWidget(songMetadata_label, 2);
+  hboxfinal->addLayout(vboxplaypauseslidertimer, 3);
   // hboxfinal->addWidget(new QSizeGrip(widget), 0, Qt::AlignBottom |
   // Qt::AlignRight);
   songMetadata_label->setVisible(false);
@@ -220,6 +221,12 @@ Player::Player(QWidget *parent)
 
   // Set connection data
   QSettings settings;
+  // Tray stuf
+  // if (setupTrayIcon() && settings.value("systemtray").toBool())
+  trayIcon = new QSystemTrayIcon(this);
+  trayIcon->setIcon(QIcon(":icons/todi.svg"));
+  trayIcon->setToolTip("Todi");
+  trayIcon->show();
   settings.beginGroup("mpd-server-connection");
   Todi::hostname = settings.value("host", "localhost").toString();
   Todi::port = static_cast<quint16>(settings.value("port", 6600).toUInt());
@@ -251,11 +258,14 @@ Player::Player(QWidget *parent)
 
   auto quitApplication = []() { QApplication::quit(); };
   connect(quitAction, &QAction::triggered, quitApplication);
-  connect(close_pushButton, &QPushButton::clicked, quitApplication);
+  connect(close_pushButton, &QPushButton::clicked,
+          [&]() { (trayIcon->isVisible()) ? hide() : QApplication::quit(); });
   connect(about, &QAction::triggered, []() {
     std::unique_ptr<AboutDialog> abt(new AboutDialog());
     abt->exec();
   });
+  connect(trayIcon, &QSystemTrayIcon::activated, this,
+          [&]() { (isHidden()) ? show() : hide(); });
   connect(expand_collapse_PushButton, &QPushButton::clicked, this,
           &Player::expandCollapse);
 
@@ -274,7 +284,8 @@ Player::Player(QWidget *parent)
   // volume & track slider
   connect(track_slider, &TrackSlider::sliderPressed, this,
           &Player::positionSliderPressed);
-  connect(track_slider, &TrackSlider::sliderReleased, this, &Player::setPosition);
+  connect(track_slider, &TrackSlider::sliderReleased, this,
+          &Player::setPosition);
   connect(track_slider, &TrackSlider::sliderReleased, this,
           &Player::positionSliderReleased);
   connect(track_slider, SIGNAL(seekBackward()), this, SLOT(seekBackward()));
@@ -301,7 +312,7 @@ Player::Player(QWidget *parent)
   mpdDb.listAll();
 }
 
-QSize Player::sizeHint() const { return QSize(100, 100); }
+QSize Player::sizeHint() const { return QSize(width(), 61); }
 
 Player::~Player() { delete ui_; }
 
@@ -378,16 +389,16 @@ int Player::showMpdConnectionDialog() {
 }
 
 void Player::expandCollapse() {
-  if (this->width() != this->height()) {
-    this->setFixedHeight(this->width());
+  /*if (height() == 61) {
     expand_collapse_PushButton->setIcon(
         IconLoader::load("edit-collapse", IconLoader::LightDark));
+    resize(width(), width());
   } else {
-    this->setFixedHeight(61);
-    // this->resize(this->width(), 61);
+      setFixedHeight(61);
     expand_collapse_PushButton->setIcon(
         IconLoader::load("edit-expand", IconLoader::LightDark));
-  }
+    //this->resize(this->width(), 61);
+  }*/
 }
 
 void Player::showVolumeSlider() {
@@ -433,6 +444,8 @@ void Player::updateStatus() {
   }
 
   volume_slider->setValue(status->volume());
+  if (status->timeElapsed() != 0)
+    setIconProgress(status->timeElapsed() * 100 / status->timeTotal());
 
   /*if (status->random())
     randomCheckBox->setCheckState(Qt::Checked);
@@ -446,7 +459,7 @@ void Player::updateStatus() {
 
   if (status->state() == MPDStatus::State::StateStopped ||
       status->state() == MPDStatus::State::StateInactive) {
-    timeElapsedFormattedString = "00:00 / 00:00";
+    timeElapsedFormattedString = "00:00";
   } else {
     timeElapsedFormattedString +=
         Song::formattedTime(static_cast<quint32>(status->timeElapsed()));
@@ -471,6 +484,7 @@ void Player::updateStatus() {
       play_pause_pushButton->setIcon(
           IconLoader::load("media-playback-start", IconLoader::LightDark));
       play_pause_pushButton->setEnabled(true);
+      setIconProgress(100);
       /*trackTitleLabel->setText("");
       trackArtistLabel->setText("");
       trackAlbumLabel->setText("");
@@ -515,9 +529,9 @@ void Player::updateStatus() {
   }*/
 
   // Set TrayIcon tooltip
-  /*QString text = toolTipText;
+  QString text;
   text += "time: " + timeElapsedFormattedString;
-  if (trayIcon != NULL) trayIcon->setToolTip(text);*/
+  if (trayIcon != NULL) trayIcon->setToolTip(text);
 
   // Check if playlist has changed and update if needed
   if (lastState == MPDStatus::State::StateInactive ||

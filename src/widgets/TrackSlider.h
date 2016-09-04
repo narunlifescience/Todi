@@ -19,7 +19,6 @@
 #ifndef TRACKSLIDER_H
 #define TRACKSLIDER_H
 
-#include <QObject>
 #include <QSlider>
 
 class TrackSliderPopup;

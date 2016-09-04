@@ -67,6 +67,7 @@ SOURCES += main.cpp \
            gui/dirviewitemroot.cpp \
            gui/Player.cpp \
            gui/IconLoader.cpp \
+           gui/Trayicon.cpp \
            widgets/TrackSlider.cpp \
            gui/MpdConnectionDialog.cpp \
            gui/globals.cpp \
@@ -77,3 +78,5 @@ SOURCES += main.cpp \
            lib/mpdstats.cpp \
            lib/mpdstatus.cpp \
            lib/song.cpp \
+
+

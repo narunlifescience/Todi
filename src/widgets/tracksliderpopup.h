@@ -46,7 +46,6 @@ class TrackSliderPopup : public QWidget {
 
   void UpdatePixmap();
   void UpdatePosition();
-  void SendMouseEventToParent(QMouseEvent* event);
 
  private:
   QString text_;

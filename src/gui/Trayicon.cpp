@@ -24,16 +24,16 @@
 #include <QPixmap>
 #include <QString>
 
-#include "main_window.h"
+#include "Player.h"
 
-bool MainWindow::setupTrayIcon() {
+bool Player::setupTrayIcon() {
   if (!QSystemTrayIcon::isSystemTrayAvailable()) {
     trayIcon = NULL;
     return false;
   }
 
   trayIcon = new QSystemTrayIcon(this);
-  trayIcon->installEventFilter(volumeSliderEventHandler);
+  /*trayIcon->installEventFilter(volumeSliderEventHandler);
   trayIconMenu = new QMenu(this);
 
   // Setup Actions
@@ -66,16 +66,16 @@ bool MainWindow::setupTrayIcon() {
   trayIconMenu->addAction(stopAction);
   trayIconMenu->addAction(playPauseAction);
   trayIconMenu->addSeparator();
-  trayIconMenu->addAction(quitAction);
+  trayIconMenu->addAction(quitAction);*/
 
-  trayIcon->setContextMenu(trayIconMenu);
-  trayIcon->setIcon(icon);
+  // trayIcon->setContextMenu(trayIconMenu);
+  trayIcon->setIcon(QIcon(":icons/todi.svg"));
   trayIcon->setToolTip("Todi");
 
   return true;
 }
 
-void MainWindow::trayIconClicked(QSystemTrayIcon::ActivationReason reason) {
+void Player::trayIconClicked(QSystemTrayIcon::ActivationReason reason) {
   switch (reason) {
     case QSystemTrayIcon::Unknown:
     case QSystemTrayIcon::Context:
@@ -91,4 +91,36 @@ void MainWindow::trayIconClicked(QSystemTrayIcon::ActivationReason reason) {
     case QSystemTrayIcon::MiddleClick:
       break;
   }
+}
+
+void Player::setIconProgress(int progress) {
+  if (progress < 13) {
+    trayIcon->setIcon(QIcon(":icons/tray/onebyeight.svg"));
+    return;
+  }
+  if (progress < 26) {
+    trayIcon->setIcon(QIcon(":icons/tray/twobyeight.svg"));
+    return;
+  }
+  if (progress < 39) {
+    trayIcon->setIcon(QIcon(":icons/tray/threebyeight.svg"));
+    return;
+  }
+  if (progress < 52) {
+    trayIcon->setIcon(QIcon(":icons/tray/fourbyeight.svg"));
+    return;
+  }
+  if (progress < 65) {
+    trayIcon->setIcon(QIcon(":icons/tray/fivebyeight.svg"));
+    return;
+  }
+  if (progress < 78) {
+    trayIcon->setIcon(QIcon(":icons/tray/sixbyeight.svg"));
+    return;
+  }
+  if (progress < 91) {
+    trayIcon->setIcon(QIcon(":icons/tray/sevenbyeight.svg"));
+    return;
+  }
+  trayIcon->setIcon(QIcon(":icons/tray/eightbyeight.svg"));
 }
