@@ -48,6 +48,8 @@
 #include "musiclibraryitemsong.h"
 #include "statistics_dialog.h"
 
+#include "mpdclient.h"
+
 Player::Player(QWidget *parent)
     : QWidget(parent, Qt::FramelessWindowHint | Qt::WindowStaysOnTopHint |
                           Qt::SubWindow),
@@ -236,7 +238,10 @@ Player::Player(QWidget *parent)
   mpdDb.setHostname(Todi::hostname);
   mpdDb.setPort(Todi::port);
 
-  while (!mpd.connectToMPD()) {
+  MPDClient *mc = new MPDClient(this);
+  mc->connectToHost(Todi::hostname, Todi::port, "");
+
+  /*while (!mpd.connectToMPD()) {
     qWarning() << "Retrying to connect...";
     if (!showMpdConnectionDialog()) {
       qCritical()
@@ -249,7 +254,7 @@ Player::Player(QWidget *parent)
     mpdDb.setPort(Todi::port);
     qWarning() << "Unable to connect to MPD with Hostname : " << Todi::hostname
                << " Port : " << Todi::port;
-  }
+  }*/
 
   // MPD
   connect(&mpd, &MPDConnection::statsUpdated, this, &Player::updateStats);

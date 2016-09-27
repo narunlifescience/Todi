@@ -9,7 +9,7 @@ INCLUDEPATH += . lib
 RESOURCES = ../data/icons.qrc
 
 # if you would like qDebug() output please comment out yhe following line
-DEFINES += QT_NO_DEBUG_OUTPUT
+#DEFINES += QT_NO_DEBUG_OUTPUT
 
 HEADERS += gui/musiclibraryitem.h \
            gui/musiclibraryitemroot.h \
@@ -40,6 +40,11 @@ HEADERS += gui/musiclibraryitem.h \
            lib/mpdstats.h \
            lib/mpdstatus.h \
            lib/song.h \
+           lib/mpdclient.h \
+    lib/commandcontroller.h \
+    lib/mpdsocket.h \
+    lib/playbackcontroller.h \
+    lib/mpdmodel.h
 
 FORMS += gui/AboutDialog.ui \
          gui/preferences_dialog.ui \
@@ -78,5 +83,7 @@ SOURCES += main.cpp \
            lib/mpdstats.cpp \
            lib/mpdstatus.cpp \
            lib/song.cpp \
-
-
+    lib/mpdclient.cpp \
+    lib/commandcontroller.cpp \
+    lib/mpdsocket.cpp \
+    lib/playbackcontroller.cpp
