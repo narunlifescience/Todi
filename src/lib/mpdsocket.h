@@ -40,6 +40,7 @@ class MPDSocket : public QTcpSocket {
   QString hostname_;
   quint16 port_;
   QString passwd_;
+  QPair<QByteArray, bool> mpdCmdReply_;
   static const int socketReadTimeOut_;
   static const int socketMaxReadAttempt_;
 };

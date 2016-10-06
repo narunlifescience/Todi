@@ -24,22 +24,22 @@
 #include <QPushButton>
 #include <QSlider>
 #include <QWidget>
-
-#include "TrackSlider.h"
-#include "gui/dirviewmodel.h"
-#include "gui/dirviewproxymodel.h"
-#include "gui/musiclibrarymodel.h"
-#include "gui/musiclibrarysortfiltermodel.h"
-#include "gui/playlisttablemodel.h"
-#include "lib/mpdconnection.h"
-#include "lib/mpddatabaseconnection.h"
-
+#include <memory>
 #include <QSystemTrayIcon>
 #include <QVector>
+#include <QTimer>
+
+//#include "TrackSlider.h"
+#include "mpdmodel.h"
 
 class Ui_Player;
 class QHBoxLayout;
 class QVBoxLayout;
+
+class MPDClient;
+class MPDdata;
+class PlaybackController;
+class TrackSlider;
 
 class Player : public QWidget {
   Q_OBJECT
@@ -61,20 +61,17 @@ class Player : public QWidget {
   Ui_Player *ui_;
   QPoint dragPosition;
 
-  MPDConnection mpd;
-  MPDDatabaseConnection mpdDb;
-  MPDStatus::State lastState;
+  std::unique_ptr <MPDClient> mpdClient_;
+  std::shared_ptr<MPDdata> dataAccess_;
+  std::shared_ptr<PlaybackController> playbackCtrlr_;
+
+  MPDPlaybackState lastState;
   qint32 lastSongId;
-  quint32 lastPlaylist;
-  QDateTime lastDbUpdate;
+
   int fetchStatsFactor;
   int nowPlayingFactor;
   QTimer statusTimer;
-  PlaylistTableModel playlistModel;
-  dirViewModel dirviewModel;
-  DirViewProxyModel dirProxyModel;
-  MusicLibraryModel musicLibraryModel;
-  MusicLibrarySortFilterModel libraryProxyModel;
+
   bool draggingPositionSlider;
   QLabel bitrateLabel;
 

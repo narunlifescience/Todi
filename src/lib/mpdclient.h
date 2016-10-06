@@ -22,25 +22,30 @@
 
 class MPDSocket;
 class CommandController;
+class MPDdata;
+class PlaybackController;
 
-class MPDClient : public QObject
-{
-    Q_OBJECT
+class MPDClient : public QObject {
+  Q_OBJECT
 
-public:
-    MPDClient(QObject *parent = nullptr);
-    ~MPDClient();
+ public:
+  MPDClient(QObject *parent = nullptr);
+  ~MPDClient();
 
-    void connectToHost(const QString &hostName, const quint16 port,
-                       const QString &password);
-    void disconnectFromHost() const;
+  void connectToHost(const QString &hostName, const quint16 port,
+                     const QString &password);
+  void disconnectFromHost() const;
 
-private:
-    std::shared_ptr<MPDSocket> mpdSocket_;
+  std::shared_ptr<MPDdata> getSharedMPDdataPtr() const;
+  std::shared_ptr<PlaybackController> getSharedPlaybackControllerPtr() const;
 
-public:
-    std::shared_ptr<CommandController> commandCtrlr_;
+ private:
+  std::shared_ptr<MPDSocket> mpdSocket_;
+  std::shared_ptr<CommandController> cmdCtrlr_;
 
+ public:
+  std::shared_ptr<MPDdata> dataAccess_;
+  std::shared_ptr<PlaybackController> playbackCtrlr_;
 };
 
-#endif //MPDCLIENT_H
+#endif  // MPDCLIENT_H

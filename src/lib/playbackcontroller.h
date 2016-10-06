@@ -30,25 +30,25 @@ class PlaybackController : QObject {
  public slots:
   void next() const;
   void pause(quint8 toggle) const;
-  void play();
-  void playId();
+  void play(quint32 song);
+  void playId(quint32 songid);
   void previous();
-  void seek();
-  void seekId();
-  void seekCur();
+  void seek(quint32 song, quint32 time);
+  void seekId(quint32 songid, quint32 time);
+  void seekCur(quint32 time);
   void stop();
 
  private:
   std::shared_ptr<CommandController> cmdCtrlr_;
-  const static QByteArray nextCommand;
-  const static QByteArray pauseCommand;
-  const static QByteArray playCommand;
-  const static QByteArray platIdCommand;
-  const static QByteArray previousCommand;
-  const static QByteArray seekCommand;
-  const static QByteArray seekIdCommand;
-  const static QByteArray seekCurCommand;
-  const static QByteArray stopCommand;
+  const static QByteArray nextCmd;
+  const static QByteArray pauseCmd;
+  const static QByteArray playCmd;
+  const static QByteArray playIdCmd;
+  const static QByteArray previousCmd;
+  const static QByteArray seekCmd;
+  const static QByteArray seekIdCmd;
+  const static QByteArray seekCurCmd;
+  const static QByteArray stopCmd;
 };
 
 #endif  // PLAYBACKCONTROLLER_H

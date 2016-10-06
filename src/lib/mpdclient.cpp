@@ -15,24 +15,36 @@
 */
 
 #include "mpdclient.h"
-#include "mpdsocket.h"
 #include "commandcontroller.h"
+#include "mpddata.h"
 #include "mpdmodel.h"
+#include "mpdsocket.h"
+#include "playbackcontroller.h"
 
-MPDClient::MPDClient(QObject *parent) : QObject (parent),
-  mpdSocket_(new MPDSocket(this)),
-  commandCtrlr_(new CommandController(this, mpdSocket_)) {
-}
+MPDClient::MPDClient(QObject *parent)
+    : QObject(parent),
+      mpdSocket_(new MPDSocket(this)),
+      cmdCtrlr_(new CommandController(this, mpdSocket_)),
+      dataAccess_(new MPDdata(this, cmdCtrlr_)),
+      playbackCtrlr_(new PlaybackController(this, cmdCtrlr_)) {}
 
-MPDClient::~MPDClient(){}
+MPDClient::~MPDClient() {}
 
 void MPDClient::connectToHost(const QString &hostName, const quint16 port,
                               const QString &password) {
   mpdSocket_->connectToMPDHost(hostName, port, password);
-  commandCtrlr_->sendCommand("pause", true, true);
-  qRegisterMetaType<MPDStatusValues>("MPDStatusValues");
+  //cmdCtrlr_->sendCommand("pause", true, true);
 }
 
 void MPDClient::disconnectFromHost() const {
   mpdSocket_->disconnectFromMPDHost();
+}
+
+std::shared_ptr<MPDdata> MPDClient::getSharedMPDdataPtr() const {
+  return dataAccess_;
+}
+
+std::shared_ptr<PlaybackController> MPDClient::getSharedPlaybackControllerPtr()
+    const {
+  return playbackCtrlr_;
 }

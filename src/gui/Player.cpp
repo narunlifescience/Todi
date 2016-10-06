@@ -24,11 +24,13 @@
 #include <QMouseEvent>
 #include <QPainter>
 #include <QPushButton>
+#include <QSettings>
 #include <QSizeGrip>
 #include <QSpacerItem>
 #include <QTimer>
 #include <QWidget>
 
+#include <math.h>
 #include <QGraphicsDropShadowEffect>
 #include <QMenu>
 #include <QMouseEvent>
@@ -41,20 +43,21 @@
 
 #include "AboutDialog.h"
 #include "MpdConnectionDialog.h"
+#include "widgets/TrackSlider.h"
 #include "globals.h"
-#include "lib/mpdparseutils.h"
-#include "lib/mpdstats.h"
-#include "lib/mpdstatus.h"
-#include "musiclibraryitemsong.h"
-#include "statistics_dialog.h"
 
 #include "mpdclient.h"
+#include "mpddata.h"
+#include "playbackcontroller.h"
 
 Player::Player(QWidget *parent)
     : QWidget(parent, Qt::FramelessWindowHint | Qt::WindowStaysOnTopHint |
                           Qt::SubWindow),
       ui_(new Ui_Player),
-      lastState(MPDStatus::State::StateInactive),
+      mpdClient_(new MPDClient(this)),
+      dataAccess_(nullptr),
+      playbackCtrlr_(nullptr),
+      lastState(MPDPlaybackState::Inactive),
       lastSongId(-1),
       fetchStatsFactor(0),
       nowPlayingFactor(0),
@@ -79,6 +82,9 @@ Player::Player(QWidget *parent)
 
   IconLoader::init();
   IconLoader::lumen_ = IconLoader::isLight(Qt::black);
+
+  dataAccess_ = mpdClient_->getSharedMPDdataPtr();
+  playbackCtrlr_ = mpdClient_->getSharedPlaybackControllerPtr();
 
   this->resize(this->width(), 61);
   this->setAttribute(Qt::WA_TranslucentBackground, true);
@@ -217,10 +223,6 @@ Player::Player(QWidget *parent)
 
   widget->installEventFilter(widget);
 
-  // Start connection threads
-  mpd.start();
-  mpdDb.start();
-
   // Set connection data
   QSettings settings;
   // Tray stuf
@@ -233,13 +235,8 @@ Player::Player(QWidget *parent)
   Todi::hostname = settings.value("host", "localhost").toString();
   Todi::port = static_cast<quint16>(settings.value("port", 6600).toUInt());
   settings.endGroup();
-  mpd.setHostname(Todi::hostname);
-  mpd.setPort(Todi::port);
-  mpdDb.setHostname(Todi::hostname);
-  mpdDb.setPort(Todi::port);
 
-  MPDClient *mc = new MPDClient(this);
-  mc->connectToHost(Todi::hostname, Todi::port, "");
+  mpdClient_->connectToHost(Todi::hostname, Todi::port, "");
 
   /*while (!mpd.connectToMPD()) {
     qWarning() << "Retrying to connect...";
@@ -257,9 +254,10 @@ Player::Player(QWidget *parent)
   }*/
 
   // MPD
-  connect(&mpd, &MPDConnection::statsUpdated, this, &Player::updateStats);
-  connect(&mpd, &MPDConnection::statusUpdated, this, &Player::updateStatus,
-          Qt::DirectConnection);
+  connect(dataAccess_.get(), &MPDdata::MPDStatsUpdated, this,
+          &Player::updateStats);
+  connect(dataAccess_.get(), &MPDdata::MPDStatusUpdated, this,
+          &Player::updateStatus, Qt::DirectConnection);
 
   auto quitApplication = []() { QApplication::quit(); };
   connect(quitAction, &QAction::triggered, quitApplication);
@@ -278,12 +276,12 @@ Player::Player(QWidget *parent)
   connect(play_pause_pushButton, &QPushButton::clicked, this,
           &Player::playPauseTrack);
   connect(previous_pushButton, &QPushButton::clicked, [&]() {
-    mpd.goToPrevious();
-    mpd.getStatus();
+    playbackCtrlr_->previous();
+    dataAccess_->getMPDStatus();
   });
   connect(next_pushButton, &QPushButton::clicked, [&]() {
-    mpd.goToNext();
-    mpd.getStatus();
+    playbackCtrlr_->next();
+    dataAccess_->getMPDStatus();
   });
 
   // volume & track slider
@@ -297,24 +295,20 @@ Player::Player(QWidget *parent)
   connect(track_slider, SIGNAL(seekForward()), this, SLOT(seekForward()));
   // connect(track_slider, &TrackSlider::seekBackward, this,
   //        &Player::seekBackward);
-  connect(volume_slider, &QSlider::valueChanged,
-          [&](int vol) { mpd.setVolume(static_cast<quint8>(vol)); });
+  // connect(volume_slider, &QSlider::valueChanged,
+  //        [&](int vol) { mpd.setVolume(static_cast<quint8>(vol)); });
   connect(volume_pushButton, &QPushButton::clicked, this,
           &Player::showVolumeSlider);
 
   // Timer time out update status
   statusTimer.start(settings.value("getstatus-interval", 1000).toInt());
-  connect(&statusTimer, &QTimer::timeout, &mpd, &MPDConnection::getStatus);
+  //statusTimer.start(10000);
+  connect(&statusTimer, &QTimer::timeout, dataAccess_.get(),
+          &MPDdata::getMPDStatus);
 
   // update status & stats when starting the application
-  mpd.getStatus();
-  mpd.getStats();
-
-  /* Check if we need to get a new db or not */
-  if (!musicLibraryModel.fromXML(MPDStats::getInstance()->dbUpdate()))
-    mpdDb.listAllInfo(MPDStats::getInstance()->dbUpdate());
-
-  mpdDb.listAll();
+  dataAccess_->getMPDStatus();
+  dataAccess_->getMPDStats();
 }
 
 QSize Player::sizeHint() const { return QSize(width(), 61); }
@@ -416,87 +410,74 @@ void Player::showVolumeSlider() {
 }
 
 void Player::updateStats() {
-  MPDStats *const stats = MPDStats::getInstance();
+  //MPDStats *const stats = MPDStats::getInstance();
 
   /*
    * Check if remote db is more recent than local one
    * Also update the dirview
    */
-  if (lastDbUpdate.isValid() && stats->dbUpdate() > lastDbUpdate) {
+  /*if (lastDbUpdate.isValid() && stats->dbUpdate() > lastDbUpdate) {
     mpdDb.listAllInfo(stats->dbUpdate());
     mpdDb.listAll();
   }
 
-  lastDbUpdate = stats->dbUpdate();
+  lastDbUpdate = stats->dbUpdate();*/
 }
 
 void Player::updateStatus() {
-  MPDStatus *const status = MPDStatus::getInstance();
   QString timeElapsedFormattedString;
 
   // Retrieve stats every 5 seconds
-  fetchStatsFactor = (fetchStatsFactor + 1) % 5;
-  if (fetchStatsFactor == 0) mpd.getStats();
+  // fetchStatsFactor = (fetchStatsFactor + 1) % 5;
+  // if (fetchStatsFactor == 0) mpd.getStats();
 
   if (!draggingPositionSlider) {
-    if (status->state() == MPDStatus::State::StateStopped ||
-        status->state() == MPDStatus::State::StateInactive) {
+    if (dataAccess_->state() == MPDPlaybackState::Stopped ||
+        dataAccess_->state() == MPDPlaybackState::Inactive) {
       track_slider->setValue(0);
     } else {
-      track_slider->setRange(0, status->timeTotal());
-      track_slider->setValue(status->timeElapsed());
+      track_slider->setRange(0, dataAccess_->timeTotal());
+      track_slider->setValue(dataAccess_->timeElapsed());
     }
   }
 
-  volume_slider->setValue(status->volume());
-  if (status->timeElapsed() != 0)
-    setIconProgress(status->timeElapsed() * 100 / status->timeTotal());
-
-  /*if (status->random())
-    randomCheckBox->setCheckState(Qt::Checked);
-  else
-    randomCheckBox->setCheckState(Qt::Unchecked);
-
-  if (status->repeat())
-    repeatCheckBox->setCheckState(Qt::Checked);
-  else
-    repeatCheckBox->setCheckState(Qt::Unchecked);*/
-
-  if (status->state() == MPDStatus::State::StateStopped ||
-      status->state() == MPDStatus::State::StateInactive) {
+  /*volume_slider->setValue(dataAccess_->volume());
+  if (dataAccess_->timeElapsed() != 0)
+    setIconProgress(dataAccess_->timeElapsed() * 100 /
+                    dataAccess_->timeTotal());
+*/
+  if (dataAccess_->state() == MPDPlaybackState::Stopped ||
+      dataAccess_->state() == MPDPlaybackState::Inactive) {
     timeElapsedFormattedString = "00:00";
   } else {
     timeElapsedFormattedString +=
-        Song::formattedTime(static_cast<quint32>(status->timeElapsed()));
-    // timeElapsedFormattedString += " / ";
-    // timeElapsedFormattedString +=
-    //    Song::formattedTime(static_cast<quint32>(status->timeTotal()));
+        QString::number(floor(dataAccess_->timeElapsed() / 60.0));
+    timeElapsedFormattedString += ":";
+    if (dataAccess_->timeElapsed() % 60 < 10) timeElapsedFormattedString += "0";
+    timeElapsedFormattedString +=
+        QString::number(dataAccess_->timeElapsed() % 60);
   }
 
   timer_label->setText(timeElapsedFormattedString);
 
-  switch (status->state()) {
-    case MPDStatus::State::StatePlaying:
+  switch (dataAccess_->state()) {
+    case MPDPlaybackState::Playing:
       // Main window
       play_pause_pushButton->setIcon(
           IconLoader::load("media-playback-pause", IconLoader::LightDark));
       play_pause_pushButton->setEnabled(true);
       break;
 
-    case MPDStatus::State::StateInactive:
-    case MPDStatus::State::StateStopped:
+    case MPDPlaybackState::Inactive:
+    case MPDPlaybackState::Stopped:
       // Main window
       play_pause_pushButton->setIcon(
           IconLoader::load("media-playback-start", IconLoader::LightDark));
       play_pause_pushButton->setEnabled(true);
       setIconProgress(100);
-      /*trackTitleLabel->setText("");
-      trackArtistLabel->setText("");
-      trackAlbumLabel->setText("");
-      albumCoverLabel->setPixmap(QPixmap());*/
       break;
 
-    case MPDStatus::State::StatePaused:
+    case MPDPlaybackState::Paused:
       // Main window
       play_pause_pushButton->setIcon(
           IconLoader::load("media-playback-start", IconLoader::LightDark));
@@ -507,11 +488,12 @@ void Player::updateStatus() {
 
   // Check if song has changed or we're playing again after being stopped
   // and update song info if needed
-  if (lastState == MPDStatus::State::StateInactive ||
-      (lastState == MPDStatus::State::StateStopped &&
-       status->state() == MPDStatus::State::StatePlaying) ||
-      lastSongId != status->songId())
-    mpd.currentSong();
+  if (lastState == MPDPlaybackState::Inactive ||
+      (lastState == MPDPlaybackState::Stopped &&
+       dataAccess_->state() == MPDPlaybackState::Playing) ||
+      lastSongId != dataAccess_->songId()) {
+  }
+  // mpd.currentSong();
 
   /* Update libre scrobbler stuff (no librefm support for now)*/
   /*if (settings.value("lastfm/enabled", "false").toBool()) {
@@ -539,56 +521,54 @@ void Player::updateStatus() {
   if (trayIcon != NULL) trayIcon->setToolTip(text);
 
   // Check if playlist has changed and update if needed
-  if (lastState == MPDStatus::State::StateInactive ||
-      lastPlaylist < status->playlist()) {
-    mpd.playListInfo();
-  }
+  // if (lastState == MPDStatus::State::StateInactive ||
+  //    lastPlaylist < status->playlist()) {
+  //  mpd.playListInfo();
+  //}
 
   // Display bitrate
-  bitrateLabel.setText("Bitrate: " + QString::number(status->bitrate()));
+  bitrateLabel.setText("Bitrate: " + QString::number(dataAccess_->bitrate()));
 
   // Update status info
-  lastState = status->state();
-  lastSongId = status->songId();
-  lastPlaylist = status->playlist();
+  lastState = dataAccess_->state();
+  lastSongId = dataAccess_->songId();
+  // lastPlaylist = dataAccess_->playlist();
 }
 
 void Player::playPauseTrack() {
-  MPDStatus *const status = MPDStatus::getInstance();
-
-  if (status->state() == MPDStatus::State::StatePlaying)
-    mpd.setPause(true);
-  else if (status->state() == MPDStatus::State::StatePaused)
-    mpd.setPause(false);
+  if (dataAccess_->state() == MPDPlaybackState::Playing)
+    playbackCtrlr_->pause(1);
+  else if (dataAccess_->state() == MPDPlaybackState::Paused)
+    playbackCtrlr_->pause(0);
   else
-    mpd.startPlayingSong();
+    playbackCtrlr_->playId(lastSongId);
 
-  mpd.getStatus();
+  dataAccess_->getMPDStatus();
 }
 
 void Player::stopTrack() {
-  mpd.stopPlaying();
-  mpd.getStatus();
+  playbackCtrlr_->stop();
+  dataAccess_->getMPDStatus();
 }
 
 void Player::positionSliderPressed() { draggingPositionSlider = true; }
 
 void Player::setPosition() {
-  mpd.setSeekId(static_cast<quint32>(MPDStatus::getInstance()->songId()),
-                static_cast<quint32>(track_slider->value()));
-  mpd.getStatus();
+  playbackCtrlr_->seekId(static_cast<quint32>(dataAccess_->songId()),
+                         static_cast<quint32>(track_slider->value()));
+  dataAccess_->getMPDStatus();
 }
 
 void Player::seekBackward() {
-  mpd.setSeekId(static_cast<quint32>(MPDStatus::getInstance()->songId()),
-                static_cast<quint32>(track_slider->value() - 10));
-  mpd.getStatus();
+  playbackCtrlr_->seekId(static_cast<quint32>(dataAccess_->songId()),
+                         static_cast<quint32>(track_slider->value() - 10));
+  dataAccess_->getMPDStatus();
 }
 
 void Player::seekForward() {
-  mpd.setSeekId(static_cast<quint32>(MPDStatus::getInstance()->songId()),
-                static_cast<quint32>(track_slider->value() + 10));
-  mpd.getStatus();
+  playbackCtrlr_->seekId(static_cast<quint32>(dataAccess_->songId()),
+                         static_cast<quint32>(track_slider->value() + 10));
+  dataAccess_->getMPDStatus();
 }
 
 void Player::positionSliderReleased() { draggingPositionSlider = false; }

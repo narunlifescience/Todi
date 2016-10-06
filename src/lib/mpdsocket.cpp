@@ -26,7 +26,11 @@ const int MPDSocket::socketReadTimeOut_ = 5000;
 const int MPDSocket::socketMaxReadAttempt_ = 9;
 
 MPDSocket::MPDSocket(QObject *parent)
-    : QTcpSocket(parent), hostname_(""), port_(0), passwd_("") {
+    : QTcpSocket(parent),
+      hostname_(""),
+      port_(0),
+      passwd_(""),
+      mpdCmdReply_(QByteArray(), false) {
   connect(this,
           static_cast<void (QTcpSocket::*)(const QAbstractSocket::SocketError)>(
               &QTcpSocket::error),
@@ -121,10 +125,9 @@ QByteArray MPDSocket::readFromMPDSocket() {
 }
 
 QPair<QByteArray, bool> MPDSocket::getMPDResponse() {
-  QPair<QByteArray, bool> mpdCmdResponse(QByteArray(), false);
-  mpdCmdResponse.first = readFromMPDSocket();
-  mpdCmdResponse.second = mpdCmdResponse.first.endsWith(oknResponse);
-  return mpdCmdResponse;
+  mpdCmdReply_.first = readFromMPDSocket();
+  mpdCmdReply_.second = mpdCmdReply_.first.endsWith(oknResponse);
+  return mpdCmdReply_;
 }
 
 void MPDSocket::onError(const QAbstractSocket::SocketError socketError) const {

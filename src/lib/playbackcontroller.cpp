@@ -17,15 +17,15 @@
 #include "playbackcontroller.h"
 
 // https://www.musicpd.org/doc/protocol/playback_commands.html
-const QByteArray PlaybackController::nextCommand = "next";
-const QByteArray PlaybackController::pauseCommand = "pause";
-const QByteArray PlaybackController::playCommand = "play";
-const QByteArray PlaybackController::platIdCommand = "playid";
-const QByteArray PlaybackController::previousCommand = "previous";
-const QByteArray PlaybackController::seekCommand = "seek";
-const QByteArray PlaybackController::seekIdCommand = "seekid";
-const QByteArray PlaybackController::seekCurCommand = "seekcur";
-const QByteArray PlaybackController::stopCommand = "stop";
+const QByteArray PlaybackController::nextCmd = "next";
+const QByteArray PlaybackController::pauseCmd = "pause";
+const QByteArray PlaybackController::playCmd = "play";
+const QByteArray PlaybackController::playIdCmd = "playid";
+const QByteArray PlaybackController::previousCmd = "previous";
+const QByteArray PlaybackController::seekCmd = "seek";
+const QByteArray PlaybackController::seekIdCmd = "seekid";
+const QByteArray PlaybackController::seekCurCmd = "seekcur";
+const QByteArray PlaybackController::stopCmd = "stop";
 
 PlaybackController::PlaybackController(
     QObject *parent, std::shared_ptr<CommandController> commandctrlr)
@@ -33,22 +33,34 @@ PlaybackController::PlaybackController(
 
 PlaybackController::~PlaybackController() {}
 
-void PlaybackController::next() const { cmdCtrlr_->sendCommand(nextCommand); }
+void PlaybackController::next() const { cmdCtrlr_->sendCommand(nextCmd); }
 
 void PlaybackController::pause(quint8 toggle) const {
-  cmdCtrlr_->sendCommand(pauseCommand + " " + static_cast<const char>(toggle));
+  cmdCtrlr_->sendCommand(pauseCmd + " " + QByteArray::number(toggle));
 }
 
-void PlaybackController::play() {}
+void PlaybackController::play(quint32 song) {
+  cmdCtrlr_->sendCommand(playCmd + " " + QByteArray::number(song));
+}
 
-void PlaybackController::playId() {}
+void PlaybackController::playId(quint32 songid) {
+  cmdCtrlr_->sendCommand(playIdCmd + " " + QByteArray::number(songid));
+}
 
-void PlaybackController::previous() { cmdCtrlr_->sendCommand(previousCommand); }
+void PlaybackController::previous() { cmdCtrlr_->sendCommand(previousCmd); }
 
-void PlaybackController::seek() {}
+void PlaybackController::seek(quint32 song, quint32 time) {
+  cmdCtrlr_->sendCommand(seekCmd + " " + QByteArray::number(song) + " " +
+                         QByteArray::number(time));
+}
 
-void PlaybackController::seekId() {}
+void PlaybackController::seekId(quint32 songid, quint32 time) {
+  cmdCtrlr_->sendCommand(seekIdCmd + " " + QByteArray::number(songid) +
+                         " " + QByteArray::number(time));
+}
 
-void PlaybackController::seekCur() {}
+void PlaybackController::seekCur(quint32 time) {
+  cmdCtrlr_->sendCommand(seekCurCmd + " " + QByteArray::number(time));
+}
 
-void PlaybackController::stop() { cmdCtrlr_->sendCommand(stopCommand); }
+void PlaybackController::stop() { cmdCtrlr_->sendCommand(stopCmd); }
