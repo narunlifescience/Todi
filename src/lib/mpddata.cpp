@@ -1,5 +1,5 @@
 #include "mpddata.h"
-#include "commandcontroller.h"
+#include "mpdsocket.h"
 #include "mpddataparser.h"
 
 #include <QDebug>
@@ -7,8 +7,8 @@
 const QByteArray MPDdata::statusCommand = "status";
 const QByteArray MPDdata::statsCommand = "stats";
 
-MPDdata::MPDdata(QObject *parent, std::shared_ptr<CommandController> cmdctrlr)
-    : QObject(parent), cmdCtrlr_(cmdctrlr) {}
+MPDdata::MPDdata(QObject *parent, std::shared_ptr<MPDSocket> mpdSocket)
+    : QObject(parent), mpdSocket_(mpdSocket) {}
 
 MPDdata::~MPDdata() {}
 
@@ -21,7 +21,7 @@ void MPDdata::updateMpdStats(const MPDStatsValues &newStatsValues) {
 }
 
 void MPDdata::getMPDStatus() {
-  QPair<QByteArray, bool> mpdStatus(cmdCtrlr_->sendCommand(statusCommand));
+  QPair<QByteArray, bool> mpdStatus(mpdSocket_->sendCommand(statusCommand));
   if (mpdStatus.second) {
     statusValues_ = MPDdataParser::parseStatus(mpdStatus.first);
     emit MPDStatusUpdated();
@@ -29,7 +29,7 @@ void MPDdata::getMPDStatus() {
 }
 
 void MPDdata::getMPDStats() {
-  QPair<QByteArray, bool> mpdStats(cmdCtrlr_->sendCommand(statsCommand));
+  QPair<QByteArray, bool> mpdStats(mpdSocket_->sendCommand(statsCommand));
   if (mpdStats.second) {
     statsValues_ = std::move(MPDdataParser::parseStats(mpdStats.first));
     emit MPDStatsUpdated();

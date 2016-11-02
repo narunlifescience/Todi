@@ -15,7 +15,6 @@
 */
 
 #include "mpdclient.h"
-#include "commandcontroller.h"
 #include "mpddata.h"
 #include "mpdmodel.h"
 #include "mpdsocket.h"
@@ -24,16 +23,14 @@
 MPDClient::MPDClient(QObject *parent)
     : QObject(parent),
       mpdSocket_(new MPDSocket(this)),
-      cmdCtrlr_(new CommandController(this, mpdSocket_)),
-      dataAccess_(new MPDdata(this, cmdCtrlr_)),
-      playbackCtrlr_(new PlaybackController(this, cmdCtrlr_)) {}
+      dataAccess_(new MPDdata(this, mpdSocket_)),
+      playbackCtrlr_(new PlaybackController(this, mpdSocket_)) {}
 
 MPDClient::~MPDClient() {}
 
 void MPDClient::connectToHost(const QString &hostName, const quint16 port,
                               const QString &password) {
   mpdSocket_->connectToMPDHost(hostName, port, password);
-  //cmdCtrlr_->sendCommand("pause", true, true);
 }
 
 void MPDClient::disconnectFromHost() const {

@@ -41,7 +41,6 @@ class MPDClient : public QObject {
 
  private:
   std::shared_ptr<MPDSocket> mpdSocket_;
-  std::shared_ptr<CommandController> cmdCtrlr_;
 
  public:
   std::shared_ptr<MPDdata> dataAccess_;

@@ -6,13 +6,13 @@
 
 #include "mpdmodel.h"
 
-class CommandController;
+class MPDSocket;
 
 class MPDdata : public QObject {
   Q_OBJECT
  public:
   explicit MPDdata(QObject *parent = nullptr,
-          std::shared_ptr<CommandController> cmdctrlr = nullptr);
+          std::shared_ptr<MPDSocket> mpdSocket = nullptr);
   ~MPDdata();
   void updateMpdStatus(const MPDStatusValues &newStatusValues);
   void updateMpdStats(const MPDStatsValues &newStatsValues);
@@ -58,7 +58,7 @@ signals:
   void MPDStatsUpdated();
 
  private:
-  std::shared_ptr<CommandController> cmdCtrlr_;
+  std::shared_ptr<MPDSocket> mpdSocket_;
   MPDStatusValues statusValues_;
   MPDStatsValues statsValues_;
   static const QByteArray statusCommand;

@@ -32,6 +32,8 @@ class MPDSocket : public QTcpSocket {
   inline bool isConnected() const {
     return (state() == QAbstractSocket::ConnectedState);
   }
+  QPair<QByteArray, bool> sendCommand(const QByteArray &command,
+                   const bool emitErrors = true, const bool retry = false);
 
  public slots:
   void onError(const QAbstractSocket::SocketError socketError) const;

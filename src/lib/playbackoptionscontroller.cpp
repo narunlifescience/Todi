@@ -16,6 +16,8 @@
 
 #include "playbackoptionscontroller.h"
 
+#include "mpdsocket.h"
+
 // https://www.musicpd.org/doc/protocol/playback_option_commands.html
 const QByteArray PlaybackOptionsController::consumeCmd = "consume";
 const QByteArray PlaybackOptionsController::crossfadeCmd = "crossfade";
@@ -32,35 +34,35 @@ const QByteArray PlaybackOptionsController::replay_gain_statusCmd =
 const QByteArray PlaybackOptionsController::volumeCmd = "volume";
 
 PlaybackOptionsController::PlaybackOptionsController(
-    QObject *parent, std::shared_ptr<CommandController> commandctrlr)
-    : QObject(parent), cmdCtrlr_(commandctrlr) {}
+    QObject *parent, std::shared_ptr<MPDSocket> mpdSocket)
+    : QObject(parent), mpdSocket_(mpdSocket) {}
 
 PlaybackOptionsController::~PlaybackOptionsController() {}
 
 void PlaybackOptionsController::consume(quint8 toggle) {
-  cmdCtrlr_->sendCommand(consumeCmd + " " + QByteArray::number(toggle));
+  mpdSocket_->sendCommand(consumeCmd + " " + QByteArray::number(toggle));
 }
 
 void PlaybackOptionsController::crossfade(int seconds) {
-  cmdCtrlr_->sendCommand(crossfadeCmd + " " + QByteArray::number(seconds));
+  mpdSocket_->sendCommand(crossfadeCmd + " " + QByteArray::number(seconds));
 }
 
 void PlaybackOptionsController::random(quint8 toggle) {
-  cmdCtrlr_->sendCommand(randomCmd + " " + QByteArray::number(toggle));
+  mpdSocket_->sendCommand(randomCmd + " " + QByteArray::number(toggle));
 }
 
 void PlaybackOptionsController::repeat(quint8 toggle) {
-  cmdCtrlr_->sendCommand(repeatCmd + " " + QByteArray::number(toggle));
+  mpdSocket_->sendCommand(repeatCmd + " " + QByteArray::number(toggle));
 }
 
 void PlaybackOptionsController::setvol(quint8 vol) {
-  cmdCtrlr_->sendCommand(setvolCmd + " " + QByteArray::number(vol));
+  mpdSocket_->sendCommand(setvolCmd + " " + QByteArray::number(vol));
 }
 
 void PlaybackOptionsController::single(quint8 toggle) {
-  cmdCtrlr_->sendCommand(singleCmd + " " + QByteArray::number(toggle));
+  mpdSocket_->sendCommand(singleCmd + " " + QByteArray::number(toggle));
 }
 
 void PlaybackOptionsController::volume(int volChange) {
-  cmdCtrlr_->sendCommand(volumeCmd + " " + QByteArray::number(volChange));
+  mpdSocket_->sendCommand(volumeCmd + " " + QByteArray::number(volChange));
 }

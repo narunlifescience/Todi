@@ -19,13 +19,12 @@ HEADERS += gui/AboutDialog.h \
            widgets/TrackSlider.h \
            widgets/tracksliderpopup.h \
            lib/mpdclient.h \
-           lib/commandcontroller.h \
            lib/mpdsocket.h \
            lib/playbackcontroller.h \
            lib/mpdmodel.h \
            lib/mpddata.h \
            lib/mpddataparser.h \
-    lib/playbackoptionscontroller.h
+           lib/playbackoptionscontroller.h
 
 FORMS +=   gui/AboutDialog.ui \
            gui/MpdConnectionDialog.ui \
@@ -41,9 +40,8 @@ SOURCES += main.cpp \
            widgets/TrackSlider.cpp \
            widgets/tracksliderpopup.cpp \
            lib/mpdclient.cpp \
-           lib/commandcontroller.cpp \
            lib/mpdsocket.cpp \
            lib/playbackcontroller.cpp \
            lib/mpddata.cpp \
            lib/mpddataparser.cpp \
-    lib/playbackoptionscontroller.cpp
+           lib/playbackoptionscontroller.cpp

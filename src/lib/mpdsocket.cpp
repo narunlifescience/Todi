@@ -130,6 +130,43 @@ QPair<QByteArray, bool> MPDSocket::getMPDResponse() {
   return mpdCmdReply_;
 }
 
+QPair<QByteArray, bool> MPDSocket::sendCommand(const QByteArray &command,
+                                               const bool emitErrors,
+                                               const bool retry) {
+  qDebug() << "sending Command: " << command << emitErrors << retry;
+  QPair<QByteArray, bool> mpdCmdResponse(QByteArray(), false);
+  if (!isConnected()) {
+    qCritical() << "Failed to send command to " << command
+                << "- not connected!";
+    return mpdCmdResponse;
+  }
+
+  if (write(command + '\n') == -1) {
+    qCritical() << "Failed to write";
+    // If we fail to write, dont wait for bytes to be written!!
+    close();
+  } else {
+    const int timeout = 5000;
+    qDebug() << "Timeout (ms): " << timeout;
+    waitForBytesWritten(timeout);
+    qDebug() << "Socket state after write: " << state();
+    mpdCmdResponse = getMPDResponse();
+  }
+
+  if (!mpdCmdResponse.second) {
+    qWarning() << "sent Command: " << command << " failed!";
+
+    // Try one more time if retry status is true
+    if (mpdCmdResponse.first.isEmpty() && retry) {
+      return sendCommand(command, emitErrors, false);
+    }
+    return mpdCmdResponse;
+  }
+
+  qDebug() << "sentCommand: " << command << " sucessful!";
+  return mpdCmdResponse;
+}
+
 void MPDSocket::onError(const QAbstractSocket::SocketError socketError) const {
   switch (socketError) {
     case QAbstractSocket::ConnectionRefusedError:

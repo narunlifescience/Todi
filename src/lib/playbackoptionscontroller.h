@@ -18,14 +18,16 @@
 #define PLAYBACKOPTIONSCONTROLLER_H
 
 #include <QObject>
-#include "commandcontroller.h"
+#include <memory>
+
+class MPDSocket;
 
 class PlaybackOptionsController : public QObject {
   Q_OBJECT
  public:
   explicit PlaybackOptionsController(
       QObject *parent = nullptr,
-      std::shared_ptr<CommandController> commandctrlr = nullptr);
+      std::shared_ptr<MPDSocket> mpdSocket = nullptr);
   ~PlaybackOptionsController();
 
  signals:
@@ -44,7 +46,7 @@ class PlaybackOptionsController : public QObject {
   void volume(int volChange);
 
  private:
-  std::shared_ptr<CommandController> cmdCtrlr_;
+  std::shared_ptr<MPDSocket> mpdSocket_;
   const static QByteArray consumeCmd;
   const static QByteArray crossfadeCmd;
   const static QByteArray mixrampdbCmd;

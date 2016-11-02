@@ -100,6 +100,7 @@ MPDStatusValues MPDdataParser::parseStatus(const QByteArray &data) {
       statusValues.error = QString::fromUtf8(line.mid(statusErrorKey.length()));
     }
   }
+  lines.clear();
   return statusValues;
 }
 
@@ -124,5 +125,6 @@ MPDStatsValues MPDdataParser::parseStats(const QByteArray &data) {
       statsValues.dbUpdate = line.mid(statsDbUpdateKey.length()).toUInt();
     }
   }
+  lines.clear();
   return statsValues;
 }

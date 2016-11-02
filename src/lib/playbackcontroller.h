@@ -17,15 +17,16 @@
 #ifndef PLAYBACKCONTROLLER_H
 #define PLAYBACKCONTROLLER_H
 
-#include <commandcontroller.h>
 #include <QObject>
+#include <memory>
+class MPDSocket;
 
 class PlaybackController : QObject {
   Q_OBJECT
  public:
   explicit PlaybackController(
       QObject *parent = nullptr,
-      std::shared_ptr<CommandController> commandctrlr = nullptr);
+      std::shared_ptr<MPDSocket> mpdSocket = nullptr);
   ~PlaybackController();
  public slots:
   void next() const;
@@ -39,7 +40,7 @@ class PlaybackController : QObject {
   void stop();
 
  private:
-  std::shared_ptr<CommandController> cmdCtrlr_;
+  std::shared_ptr<MPDSocket> mpdSocket_;
   const static QByteArray nextCmd;
   const static QByteArray pauseCmd;
   const static QByteArray playCmd;
