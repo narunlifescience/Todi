@@ -31,6 +31,7 @@
 #include <QWidget>
 
 #include <math.h>
+#include <QDebug>
 #include <QGraphicsDropShadowEffect>
 #include <QMenu>
 #include <QMouseEvent>
@@ -39,7 +40,6 @@
 #include <QStyleOptionSlider>
 #include <QTimer>
 #include <QWheelEvent>
-#include <memory>
 
 #include "AboutDialog.h"
 #include "MpdConnectionDialog.h"
