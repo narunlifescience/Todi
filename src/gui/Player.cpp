@@ -237,22 +237,16 @@ Player::Player(QWidget *parent)
   Todi::port = static_cast<quint16>(settings.value("port", 6600).toUInt());
   settings.endGroup();
 
-  mpdClient_->connectToHost(Todi::hostname, Todi::port, "");
-
-  /*while (!mpd.connectToMPD()) {
+  while (!mpdClient_->connectToHost(Todi::hostname, Todi::port, "")) {
     qWarning() << "Retrying to connect...";
     if (!showMpdConnectionDialog()) {
       qCritical()
           << "MPD connection couldnot be established! Exiting application...";
       exit(EXIT_FAILURE);
     }
-    mpd.setHostname(Todi::hostname);
-    mpd.setPort(Todi::port);
-    mpdDb.setHostname(Todi::hostname);
-    mpdDb.setPort(Todi::port);
     qWarning() << "Unable to connect to MPD with Hostname : " << Todi::hostname
                << " Port : " << Todi::port;
-  }*/
+  }
 
   // MPD
   connect(dataAccess_.get(), &MPDdata::MPDStatsUpdated, this,

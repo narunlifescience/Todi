@@ -32,7 +32,7 @@ class MPDClient : public QObject {
   MPDClient(QObject *parent = nullptr);
   ~MPDClient();
 
-  void connectToHost(const QString &hostName, const quint16 port,
+  bool connectToHost(const QString &hostName, const quint16 port,
                      const QString &password);
   void disconnectFromHost() const;
 

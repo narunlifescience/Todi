@@ -28,9 +28,10 @@ MPDClient::MPDClient(QObject *parent)
 
 MPDClient::~MPDClient() {}
 
-void MPDClient::connectToHost(const QString &hostName, const quint16 port,
+bool MPDClient::connectToHost(const QString &hostName, const quint16 port,
                               const QString &password) {
   mpdSocket_->connectToMPDHost(hostName, port, password);
+  return mpdSocket_->isConnected();
 }
 
 void MPDClient::disconnectFromHost() const {
