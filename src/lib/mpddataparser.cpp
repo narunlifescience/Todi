@@ -84,6 +84,7 @@ MPDStatusValues MPDdataParser::parseStatus(const QByteArray &data) {
         statusValues.timeElapsed = values.at(0).toInt();
         statusValues.timeTotal = values.at(1).toInt();
       }
+      values.clear();
     } else if (line.startsWith(statusBitrateKey)) {
       statusValues.bitrate =
           static_cast<quint16>(line.mid(statusBitrateKey.length()).toUInt());
@@ -94,6 +95,7 @@ MPDStatusValues MPDdataParser::parseStatus(const QByteArray &data) {
         statusValues.bits = static_cast<quint8>(values.at(1).toUInt());
         statusValues.channels = static_cast<quint8>(values.at(2).toUInt());
       }
+      values.clear();
     } else if (line.startsWith(statusUpdatingDbKey)) {
       statusValues.updatingDb = line.mid(statusUpdatingDbKey.length()).toInt();
     } else if (line.startsWith(statusErrorKey)) {

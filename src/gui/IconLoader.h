@@ -30,6 +30,7 @@ class IconLoader {
 
   static void init();
   static QIcon load(const QString& name, const IconMode& iconMode);
+  static QIcon loadSystemTray(const QString& name);
   static int inline isLight(const QColor& color) {
     // convert window background to a scale of darkness to choose which
     // icons(light or dark) to load using something similer to

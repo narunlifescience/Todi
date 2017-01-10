@@ -90,37 +90,5 @@ void Player::trayIconClicked(QSystemTrayIcon::ActivationReason reason) {
       break;
     case QSystemTrayIcon::MiddleClick:
       break;
-  }
-}
-
-void Player::setIconProgress(int progress) {
-  if (progress < 13) {
-    trayIcon->setIcon(QIcon(":icons/tray/onebyeight.svg"));
-    return;
-  }
-  if (progress < 26) {
-    trayIcon->setIcon(QIcon(":icons/tray/twobyeight.svg"));
-    return;
-  }
-  if (progress < 39) {
-    trayIcon->setIcon(QIcon(":icons/tray/threebyeight.svg"));
-    return;
-  }
-  if (progress < 52) {
-    trayIcon->setIcon(QIcon(":icons/tray/fourbyeight.svg"));
-    return;
-  }
-  if (progress < 65) {
-    trayIcon->setIcon(QIcon(":icons/tray/fivebyeight.svg"));
-    return;
-  }
-  if (progress < 78) {
-    trayIcon->setIcon(QIcon(":icons/tray/sixbyeight.svg"));
-    return;
-  }
-  if (progress < 91) {
-    trayIcon->setIcon(QIcon(":icons/tray/sevenbyeight.svg"));
-    return;
-  }
-  trayIcon->setIcon(QIcon(":icons/tray/eightbyeight.svg"));
+    }
 }

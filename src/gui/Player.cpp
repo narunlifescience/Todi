@@ -43,8 +43,8 @@
 
 #include "AboutDialog.h"
 #include "MpdConnectionDialog.h"
-#include "widgets/TrackSlider.h"
 #include "globals.h"
+#include "widgets/TrackSlider.h"
 
 #include "mpdclient.h"
 #include "mpddata.h"
@@ -77,7 +77,8 @@ Player::Player(QWidget *parent)
       songMetadata_label(new QLabel(this)),
       volume_slider_frame(new QFrame(this, Qt::Popup)),
       volume_slider(new QSlider(Qt::Horizontal, volume_slider_frame)),
-      resize_status(false) {
+      resize_status(false),
+      systemTrayProgress(SystemTrayProgress::EighthOctave) {
   ui_->setupUi(this);
 
   IconLoader::init();
@@ -291,6 +292,8 @@ Player::Player(QWidget *parent)
           &Player::setPosition);
   connect(track_slider, &TrackSlider::sliderReleased, this,
           &Player::positionSliderReleased);
+  connect(track_slider, &TrackSlider::valueChanged, this,
+          &Player::trayIconUpdateProgress);
   connect(track_slider, SIGNAL(seekBackward()), this, SLOT(seekBackward()));
   connect(track_slider, SIGNAL(seekForward()), this, SLOT(seekForward()));
   // connect(track_slider, &TrackSlider::seekBackward, this,
@@ -302,7 +305,7 @@ Player::Player(QWidget *parent)
 
   // Timer time out update status
   statusTimer.start(settings.value("getstatus-interval", 1000).toInt());
-  //statusTimer.start(10000);
+  // statusTimer.start(10000);
   connect(&statusTimer, &QTimer::timeout, dataAccess_.get(),
           &MPDdata::getMPDStatus);
 
@@ -410,7 +413,7 @@ void Player::showVolumeSlider() {
 }
 
 void Player::updateStats() {
-  //MPDStats *const stats = MPDStats::getInstance();
+  // MPDStats *const stats = MPDStats::getInstance();
 
   /*
    * Check if remote db is more recent than local one
@@ -448,7 +451,11 @@ void Player::updateStatus() {
 */
   if (dataAccess_->state() == MPDPlaybackState::Stopped ||
       dataAccess_->state() == MPDPlaybackState::Inactive) {
-    timeElapsedFormattedString = "00:00";
+    play_pause_pushButton->setIcon(
+        IconLoader::load("media-playback-start", IconLoader::LightDark));
+    play_pause_pushButton->setEnabled(true);
+    timer_label->setText("00:00");
+    return;
   } else {
     timeElapsedFormattedString +=
         QString::number(floor(dataAccess_->timeElapsed() / 60.0));
@@ -474,7 +481,6 @@ void Player::updateStatus() {
       play_pause_pushButton->setIcon(
           IconLoader::load("media-playback-start", IconLoader::LightDark));
       play_pause_pushButton->setEnabled(true);
-      setIconProgress(100);
       break;
 
     case MPDPlaybackState::Paused:
@@ -518,7 +524,7 @@ void Player::updateStatus() {
   // Set TrayIcon tooltip
   QString text;
   text += "time: " + timeElapsedFormattedString;
-  if (trayIcon != NULL) trayIcon->setToolTip(text);
+  if (trayIcon != nullptr) trayIcon->setToolTip(text);
 
   // Check if playlist has changed and update if needed
   // if (lastState == MPDStatus::State::StateInactive ||
@@ -601,4 +607,73 @@ void Player::setAlbumCover(QImage image, QString artist, QString album) {
   dir.cd(".Todi");
   QString file(QFile::encodeName(artist + " - " + album + ".jpg"));
   image.save(dir.absolutePath() + QDir::separator() + file);*/
+}
+
+void Player::trayIconUpdateProgress(int value) {
+  if (value != 0) {
+    SystemTrayProgress trayProgress = SystemTrayProgress::EighthOctave;
+    int percent = (value * 100) / track_slider->maximum();
+
+    (percent < 12)
+        ? trayProgress = SystemTrayProgress::FirstOctave
+        : (percent < 24)
+              ? trayProgress = SystemTrayProgress::SecondOctave
+              : (percent < 36)
+                    ? trayProgress = SystemTrayProgress::ThirdOctave
+                    : (percent < 48)
+                          ? trayProgress = SystemTrayProgress::FourthOctave
+                          : (percent < 60)
+                                ? trayProgress = SystemTrayProgress::FifthOctave
+                                : (percent < 72)
+                                      ? trayProgress =
+                                            SystemTrayProgress::SixthOctave
+                                      : (percent < 84)
+                                            ? trayProgress =
+                                                  SystemTrayProgress::
+                                                      SeventhOctave
+                                            : (percent < 96)
+                                                  ? trayProgress =
+                                                        SystemTrayProgress::
+                                                            EighthOctave
+                                                  : trayProgress =
+                                                        SystemTrayProgress::
+                                                            EighthOctave;
+
+    if (trayProgress != systemTrayProgress) {
+      setTrayIconProgress(trayProgress);
+    }
+
+  } else {
+    setTrayIconProgress(SystemTrayProgress::EighthOctave);
+  }
+}
+
+void Player::setTrayIconProgress(Player::SystemTrayProgress trayProgress) {
+  switch (trayProgress) {
+    case SystemTrayProgress::FirstOctave:
+      trayIcon->setIcon(QPixmap(":/icons/tray/onebyeight.svg"));
+      break;
+    case SystemTrayProgress::SecondOctave:
+      trayIcon->setIcon(QPixmap(":/icons/tray/twobyeight.svg"));
+      break;
+    case SystemTrayProgress::ThirdOctave:
+      trayIcon->setIcon(QPixmap(":/icons/tray/threebyeight.svg"));
+      break;
+    case SystemTrayProgress::FourthOctave:
+      trayIcon->setIcon(QPixmap(":/icons/tray/fourbyeight.svg"));
+      break;
+    case SystemTrayProgress::FifthOctave:
+      trayIcon->setIcon(QPixmap(":/icons/tray/fivebyeight.svg"));
+      break;
+    case SystemTrayProgress::SixthOctave:
+      trayIcon->setIcon(QPixmap(":/icons/tray/sixbyeight.svg"));
+      break;
+    case SystemTrayProgress::SeventhOctave:
+      trayIcon->setIcon(QPixmap(":/icons/tray/sevenbyeight.svg"));
+      break;
+    case SystemTrayProgress::EighthOctave:
+      trayIcon->setIcon(QPixmap(":/icons/tray/eightbyeight.svg"));
+      break;
+  }
+  systemTrayProgress = trayProgress;
 }

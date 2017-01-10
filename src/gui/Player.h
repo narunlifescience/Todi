@@ -23,11 +23,11 @@
 #include <QObject>
 #include <QPushButton>
 #include <QSlider>
+#include <QSystemTrayIcon>
+#include <QTimer>
+#include <QVector>
 #include <QWidget>
 #include <memory>
-#include <QSystemTrayIcon>
-#include <QVector>
-#include <QTimer>
 
 //#include "TrackSlider.h"
 #include "mpdmodel.h"
@@ -61,7 +61,7 @@ class Player : public QWidget {
   Ui_Player *ui_;
   QPoint dragPosition;
 
-  std::unique_ptr <MPDClient> mpdClient_;
+  std::unique_ptr<MPDClient> mpdClient_;
   std::shared_ptr<MPDdata> dataAccess_;
   std::shared_ptr<PlaybackController> playbackCtrlr_;
 
@@ -95,9 +95,21 @@ class Player : public QWidget {
   QSystemTrayIcon *trayIcon;
   QMenu *trayIconMenu;
 
+  enum class SystemTrayProgress {
+    FirstOctave,
+    SecondOctave,
+    ThirdOctave,
+    FourthOctave,
+    FifthOctave,
+    SixthOctave,
+    SeventhOctave,
+    EighthOctave,
+  };
+  SystemTrayProgress systemTrayProgress;
+
   int showMpdConnectionDialog();
   bool setupTrayIcon();
-  void setIconProgress(int progress);
+  void setTrayIconProgress(SystemTrayProgress trayProgress);
 
  private slots:
   void expandCollapse();
@@ -113,6 +125,7 @@ class Player : public QWidget {
   void positionSliderReleased();
   void setAlbumCover(QImage, QString, QString);
   void trayIconClicked(QSystemTrayIcon::ActivationReason reason);
+  void trayIconUpdateProgress(int value);
 
  signals:
   void submitSong();
