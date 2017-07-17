@@ -29,17 +29,20 @@
 #include <QWidget>
 #include <memory>
 
-//#include "TrackSlider.h"
 #include "mpdmodel.h"
 
 class Ui_Player;
 class QHBoxLayout;
-class QVBoxLayout;
+class QGridLayout;
 
 class MPDClient;
 class MPDdata;
 class PlaybackController;
+class PlaybackOptionsController;
 class TrackSlider;
+class VolumePopup;
+class TagReader;
+class SongMetadataLabel;
 
 class Player : public QWidget {
   Q_OBJECT
@@ -64,6 +67,8 @@ class Player : public QWidget {
   std::unique_ptr<MPDClient> mpdClient_;
   std::shared_ptr<MPDdata> dataAccess_;
   std::shared_ptr<PlaybackController> playbackCtrlr_;
+  std::shared_ptr<PlaybackOptionsController> playbackOptionsCtrlr_;
+  TagReader *tagreader_;
 
   MPDPlaybackState lastState;
   qint32 lastSongId;
@@ -87,13 +92,23 @@ class Player : public QWidget {
   TrackSlider *track_slider;
   QLabel *timer_label;
   QLabel *albumcover_label;
-  QLabel *songMetadata_label;
-  QFrame *volume_slider_frame;
-  QSlider *volume_slider;
+  SongMetadataLabel *songMetadata_label;
+  VolumePopup *volume_popup;
   bool resize_status;
-
   QSystemTrayIcon *trayIcon;
   QMenu *trayIconMenu;
+  QAction *playPauseAction;
+  QAction *stopAction;
+  QAction *prevAction;
+  QAction *nextAction;
+  QAction *showSongMetadataAction;
+  QAction *consumeAction;
+  QAction *quitAction;
+  QAction *aboutAction;
+  bool consumePingpong;
+  bool nonConsumeSlider;
+
+  static const int constBlurRadius_;
 
   enum class SystemTrayProgress {
     FirstOctave,
@@ -110,6 +125,9 @@ class Player : public QWidget {
   int showMpdConnectionDialog();
   bool setupTrayIcon();
   void setTrayIconProgress(SystemTrayProgress trayProgress);
+  void doConsumePingpong();
+  void restoreTrackSliderHandle();
+  void setTrackSliderHandleToConsume();
 
  private slots:
   void expandCollapse();
@@ -123,9 +141,11 @@ class Player : public QWidget {
   void seekBackward();
   void seekForward();
   void positionSliderReleased();
-  void setAlbumCover(QImage, QString, QString);
+  void setAlbumCover(QImage);
   void trayIconClicked(QSystemTrayIcon::ActivationReason reason);
   void trayIconUpdateProgress(int value);
+  void setVolume(quint8 value);
+  void showCurrentSongMetadata();
 
  signals:
   void submitSong();

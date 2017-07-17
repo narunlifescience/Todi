@@ -5,6 +5,7 @@
 namespace MPDdataParser {
   MPDStatusValues parseStatus(const QByteArray &data);
   MPDStatsValues parseStats(const QByteArray &data);
+  MPDSongMetadata parseSongMetadata(const QByteArray &data);
 }
 
 #endif // MPDDATAPARSER_H

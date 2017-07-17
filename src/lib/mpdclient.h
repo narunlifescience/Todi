@@ -24,6 +24,7 @@ class MPDSocket;
 class CommandController;
 class MPDdata;
 class PlaybackController;
+class PlaybackOptionsController;
 
 class MPDClient : public QObject {
   Q_OBJECT
@@ -38,6 +39,8 @@ class MPDClient : public QObject {
 
   std::shared_ptr<MPDdata> getSharedMPDdataPtr() const;
   std::shared_ptr<PlaybackController> getSharedPlaybackControllerPtr() const;
+  std::shared_ptr<PlaybackOptionsController>
+  getSharedPlaybackOptionsControllerPtr() const;
 
  private:
   std::shared_ptr<MPDSocket> mpdSocket_;
@@ -45,6 +48,7 @@ class MPDClient : public QObject {
  public:
   std::shared_ptr<MPDdata> dataAccess_;
   std::shared_ptr<PlaybackController> playbackCtrlr_;
+  std::shared_ptr<PlaybackOptionsController> playbackOptionsCtrlr_;
 };
 
 #endif  // MPDCLIENT_H

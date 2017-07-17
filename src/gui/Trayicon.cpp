@@ -26,55 +26,6 @@
 
 #include "Player.h"
 
-bool Player::setupTrayIcon() {
-  if (!QSystemTrayIcon::isSystemTrayAvailable()) {
-    trayIcon = NULL;
-    return false;
-  }
-
-  trayIcon = new QSystemTrayIcon(this);
-  /*trayIcon->installEventFilter(volumeSliderEventHandler);
-  trayIconMenu = new QMenu(this);
-
-  // Setup Actions
-  playPauseAction = new QAction(tr("&Play"), trayIconMenu);
-  playPauseAction->setIcon(playbackPlay);
-  connect(playPauseAction, SIGNAL(triggered()), this, SLOT(playPauseTrack()));
-
-  stopAction = new QAction(tr("&Stop"), trayIconMenu);
-  stopAction->setIcon(playbackStop);
-  connect(stopAction, SIGNAL(triggered()), this, SLOT(stopTrack()));
-
-  prevAction = new QAction(tr("P&rev"), trayIconMenu);
-  prevAction->setIcon(playbackPrev);
-  connect(prevAction, SIGNAL(triggered()), this, SLOT(previousTrack()));
-
-  nextAction = new QAction(tr("&Next"), trayIconMenu);
-  nextAction->setIcon(playbackNext);
-  connect(nextAction, SIGNAL(triggered()), this, SLOT(nextTrack()));
-
-
-  quitAction = new QAction(tr("&Quit"), trayIconMenu);
-  connect(quitAction, SIGNAL(triggered()), qApp, SLOT(quit()));
-
-  connect(trayIcon, SIGNAL(activated(QSystemTrayIcon::ActivationReason)), this,
-          SLOT(trayIconClicked(QSystemTrayIcon::ActivationReason)));
-
-  // Setup Menu
-  trayIconMenu->addAction(prevAction);
-  trayIconMenu->addAction(nextAction);
-  trayIconMenu->addAction(stopAction);
-  trayIconMenu->addAction(playPauseAction);
-  trayIconMenu->addSeparator();
-  trayIconMenu->addAction(quitAction);*/
-
-  // trayIcon->setContextMenu(trayIconMenu);
-  trayIcon->setIcon(QIcon(":icons/todi.svg"));
-  trayIcon->setToolTip("Todi");
-
-  return true;
-}
-
 void Player::trayIconClicked(QSystemTrayIcon::ActivationReason reason) {
   switch (reason) {
     case QSystemTrayIcon::Unknown:

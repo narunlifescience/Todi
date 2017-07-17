@@ -72,4 +72,29 @@ struct MPDStatsValues {
   time_t dbUpdate;
 };
 
+struct MPDSongMetadata {
+  MPDSongMetadata() : track(0), date(0), disc(0), time(0), id(-1), pos(0) {}
+  QString file;
+  QString artist;
+  // QString artistSort;
+  QString album;
+  QString albumId;
+  // QString albumSort;
+  QString albumArtist;
+  // QString albumArtistSort;
+  QString title;
+  quint16 track;
+  QString name;
+  QString genre;
+  quint16 date;
+  QString composer;
+  QString performer;
+  QString comment;
+  quint8 disc;
+  quint16 time;
+  qint32 id;
+  QString lastModified;
+  uint pos;
+};
+
 #endif  // MPDMODEL_H

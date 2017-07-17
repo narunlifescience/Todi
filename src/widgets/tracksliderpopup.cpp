@@ -41,6 +41,7 @@ TrackSliderPopup::TrackSliderPopup(QWidget* parent)
 
 void TrackSliderPopup::SetText(const QString& text) {
   text_ = text;
+  //if(font_metrics_.width(text_) != font_metrics_.width(text))
   UpdatePixmap();
 }
 
@@ -52,6 +53,11 @@ void TrackSliderPopup::SetPopupPosition(const QPoint& pos) {
 void TrackSliderPopup::paintEvent(QPaintEvent*) {
   QPainter p(this);
   p.drawPixmap(0, 0, pixmap_);
+}
+
+void TrackSliderPopup::UpdateBackground()
+{
+
 }
 
 void TrackSliderPopup::UpdatePixmap() {

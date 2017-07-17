@@ -20,10 +20,11 @@
 #include "IconLoader.h"
 #include "ui_Player.h"
 
+#include <QBitmap>
+#include <QBuffer>
 #include <QLayout>
 #include <QMouseEvent>
 #include <QPainter>
-#include <QPushButton>
 #include <QSettings>
 #include <QSizeGrip>
 #include <QSpacerItem>
@@ -34,29 +35,41 @@
 #include <QDebug>
 #include <QGraphicsDropShadowEffect>
 #include <QMenu>
+#include <QMessageBox>
 #include <QMouseEvent>
 #include <QPalette>
+#include <QPixmapCache>
 #include <QStyle>
 #include <QStyleOptionSlider>
 #include <QTimer>
+#include <QToolTip>
 #include <QWheelEvent>
 
 #include "AboutDialog.h"
 #include "MpdConnectionDialog.h"
 #include "globals.h"
 #include "widgets/TrackSlider.h"
+#include "widgets/VolumePopup.h"
+#include "widgets/songmetadatalabel.h"
 
 #include "mpdclient.h"
 #include "mpddata.h"
 #include "playbackcontroller.h"
+#include "playbackoptionscontroller.h"
+#include "tagger/tagreader.h"
+
+const int Player::constBlurRadius_ = 5;
 
 Player::Player(QWidget *parent)
-    : QWidget(parent, Qt::FramelessWindowHint | Qt::WindowStaysOnTopHint |
-                          Qt::SubWindow),
+    : QWidget(
+          parent,
+          Qt::FramelessWindowHint | Qt::WindowStaysOnTopHint | Qt::SubWindow),
       ui_(new Ui_Player),
       mpdClient_(new MPDClient(this)),
       dataAccess_(nullptr),
       playbackCtrlr_(nullptr),
+      playbackOptionsCtrlr_(nullptr),
+      tagreader_(new TagReader(this)),
       lastState(MPDPlaybackState::Inactive),
       lastSongId(-1),
       fetchStatsFactor(0),
@@ -74,10 +87,11 @@ Player::Player(QWidget *parent)
       track_slider(new TrackSlider(Qt::Horizontal, this)),
       timer_label(new QLabel(this)),
       albumcover_label(new QLabel(this)),
-      songMetadata_label(new QLabel(this)),
-      volume_slider_frame(new QFrame(this, Qt::Popup)),
-      volume_slider(new QSlider(Qt::Horizontal, volume_slider_frame)),
+      songMetadata_label(new SongMetadataLabel(this)),
+      volume_popup(new VolumePopup(this)),
       resize_status(false),
+      consumePingpong(true),
+      nonConsumeSlider(true),
       systemTrayProgress(SystemTrayProgress::EighthOctave) {
   ui_->setupUi(this);
 
@@ -86,15 +100,17 @@ Player::Player(QWidget *parent)
 
   dataAccess_ = mpdClient_->getSharedMPDdataPtr();
   playbackCtrlr_ = mpdClient_->getSharedPlaybackControllerPtr();
+  playbackOptionsCtrlr_ = mpdClient_->getSharedPlaybackOptionsControllerPtr();
 
-  this->resize(this->width(), 61);
+  this->setFixedHeight(50);
+  widget->setFixedHeight(40);
   this->setAttribute(Qt::WA_TranslucentBackground, true);
-  setWindowTitle(tr("Todi"));
+  setWindowTitle(QApplication::applicationName());
   setWindowIcon(QIcon(":icons/todi.svg"));
 
   QGraphicsDropShadowEffect *effect = new QGraphicsDropShadowEffect(this);
   effect->setColor(QColor(181, 185, 190));
-  effect->setBlurRadius(5);
+  effect->setBlurRadius(constBlurRadius_);
   effect->setXOffset(0);
   effect->setYOffset(0);
   setGraphicsEffect(effect);
@@ -119,12 +135,21 @@ Player::Player(QWidget *parent)
   playlist_pushButton->setIcon(
       IconLoader::load("view-media-playlist", IconLoader::LightDark));
 
+  // initialize QActions
+  showSongMetadataAction = new QAction(tr("&Show Song Metadata"), this);
+  consumeAction = new QAction(tr("&Consume"), this);
+  consumeAction->setCheckable(true);
+  quitAction = new QAction(tr("&Exit"), this);
+  aboutAction = new QAction(tr("&About"), this);
+
   // Right click context menu
-  QAction *quitAction = new QAction(tr("&Exit"), this);
-  QAction *about = new QAction(tr("&About"), this);
+  addAction(showSongMetadataAction);
+  addAction(consumeAction);
   addAction(quitAction);
-  addAction(about);
+  addAction(aboutAction);
   setContextMenuPolicy(Qt::ActionsContextMenu);
+
+  quitAction->setIcon(IconLoader::load("edit-close", IconLoader::LightDark));
 
   // Theme adjust acordingly
   widget->setStyleSheet(
@@ -153,6 +178,7 @@ Player::Player(QWidget *parent)
   timer_label->setStyleSheet("QLabel{color:rgba(200, 200, 200, 200)}");
 
   QGridLayout *baselayout = new QGridLayout(this);
+  baselayout->setContentsMargins(5, 5, 5, 5);
   baselayout->addWidget(widget);
 
   QVBoxLayout *expandcollapsecloselayout = new QVBoxLayout;
@@ -185,40 +211,40 @@ Player::Player(QWidget *parent)
   vboxplaypauseslidertimer->addLayout(layout);
   vboxplaypauseslidertimer->addLayout(slidertimerlayout);
 
+  //previous_pushButton->hide();
+  //play_pause_pushButton->hide();
+  //next_pushButton->hide();
+  //volume_pushButton->hide();
+  //track_slider->hide();
+  //timer_label->hide();
+
   QHBoxLayout *hboxfinal = new QHBoxLayout(widget);
   // hboxfinal->setContentsMargins(3, 3, 0, 3);
   hboxfinal->setContentsMargins(0, 0, 0, 0);
   hboxfinal->setSpacing(5);
   // hboxfinal->addWidget(new QSizeGrip(widget), 0, Qt::AlignBottom |
   // Qt::AlignLeft);
+  songMetadata_label->hide();
   hboxfinal->addLayout(expandcollapsecloselayout, 0);
   hboxfinal->addWidget(albumcover_label, 1);
   hboxfinal->addWidget(songMetadata_label, 2);
   hboxfinal->addLayout(vboxplaypauseslidertimer, 3);
   // hboxfinal->addWidget(new QSizeGrip(widget), 0, Qt::AlignBottom |
   // Qt::AlignRight);
-  songMetadata_label->setVisible(false);
-  songMetadata_label->setText("test Todi compact");
+  songMetadata_label->setText("Todi");
 
   widget->layout()->setSizeConstraint(QLayout::SetNoConstraint);
   timer_label->setText("--:--");
   QPixmap pixmap(":/icons/nocover.svg");
-  albumcover_label->setFixedWidth(this->height() - 20);
-  albumcover_label->setFixedHeight(this->height() - 20);
-  albumcover_label->resize(this->height() - 20, this->height() - 20);
+  albumcover_label->setFixedWidth(widget->height());
+  albumcover_label->setFixedHeight(widget->height());
+  albumcover_label->resize(widget->height(), widget->height());
   albumcover_label->setPixmap(
       pixmap.scaled(albumcover_label->size(), Qt::KeepAspectRatio));
   albumcover_label->setPixmap(pixmap.scaled(albumcover_label->size(),
                                             Qt::KeepAspectRatioByExpanding,
                                             Qt::SmoothTransformation));
   albumcover_label->setScaledContents(true);
-
-  volume_slider_frame->resize(100, 40);
-  volume_slider->setMinimum(0);
-  volume_slider->setMaximum(100);
-
-  QHBoxLayout *volumeslider = new QHBoxLayout(volume_slider_frame);
-  volumeslider->addWidget(volume_slider);
 
   this->setMouseTracking(true);
 
@@ -248,17 +274,30 @@ Player::Player(QWidget *parent)
                << " Port : " << Todi::port;
   }
 
+  // restore window geometry
+  settings.beginGroup("player");
+  restoreGeometry(settings.value("geometry").toByteArray());
+  settings.endGroup();
+
   // MPD
   connect(dataAccess_.get(), &MPDdata::MPDStatsUpdated, this,
           &Player::updateStats);
   connect(dataAccess_.get(), &MPDdata::MPDStatusUpdated, this,
           &Player::updateStatus, Qt::DirectConnection);
 
-  auto quitApplication = []() { QApplication::quit(); };
+  connect(showSongMetadataAction, &QAction::triggered, this,
+          &Player::showCurrentSongMetadata);
+  auto quitApplication = [&]() {
+    QSettings settings;
+    settings.beginGroup("player");
+    settings.setValue("geometry", saveGeometry());
+    settings.endGroup();
+    QApplication::quit();
+  };
   connect(quitAction, &QAction::triggered, quitApplication);
   connect(close_pushButton, &QPushButton::clicked,
           [&]() { (trayIcon->isVisible()) ? hide() : QApplication::quit(); });
-  connect(about, &QAction::triggered, []() {
+  connect(aboutAction, &QAction::triggered, []() {
     std::unique_ptr<AboutDialog> abt(new AboutDialog());
     abt->exec();
   });
@@ -303,12 +342,22 @@ Player::Player(QWidget *parent)
   connect(&statusTimer, &QTimer::timeout, dataAccess_.get(),
           &MPDdata::getMPDStatus);
 
+  // Volume popup signal handling
+  connect(volume_popup, &VolumePopup::volumePopupSliderChanged, this,
+          &Player::setVolume);
+
+  // Cover art loading
+  connect(tagreader_, &TagReader::coverArtProcessed, this,
+          &Player::setAlbumCover);
+  connect(dataAccess_.get(), &MPDdata::MPDSongMetadataUpdated, tagreader_,
+          &TagReader::loadCoverArt);
+
   // update status & stats when starting the application
   dataAccess_->getMPDStatus();
   dataAccess_->getMPDStats();
 }
 
-QSize Player::sizeHint() const { return QSize(width(), 61); }
+QSize Player::sizeHint() const { return QSize(width(), 50); }
 
 Player::~Player() { delete ui_; }
 
@@ -329,16 +378,24 @@ void Player::mouseReleaseEvent(QMouseEvent *event) {
 }
 
 void Player::leaveEvent(QEvent *) {
-  /*songMetadata_label->show();
   previous_pushButton->hide();
   play_pause_pushButton->hide();
   next_pushButton->hide();
   volume_pushButton->hide();
   track_slider->hide();
-  update();*/
+  timer_label->hide();
+  songMetadata_label->show();
 }
 
-void Player::enterEvent(QEvent *) {}
+void Player::enterEvent(QEvent *) {
+  songMetadata_label->hide();
+  previous_pushButton->show();
+  play_pause_pushButton->show();
+  next_pushButton->show();
+  volume_pushButton->show();
+  track_slider->show();
+  timer_label->show();
+}
 
 void Player::mouseMoveEvent(QMouseEvent *event) {
   if (event->buttons() & Qt::LeftButton) {
@@ -377,6 +434,12 @@ void Player::resizeEvent(QResizeEvent *) {
     search_pushButton->hide();
     playlist_pushButton->hide();
   }
+
+  songMetadata_label->setFixedWidth(track_slider->width() +
+                                    timer_label->width());
+  // songMetadata_label->setFixedWidth(layout->contentsRect().width() - 10);
+  // while resizing we dont want animation (so pass false as arg)
+  songMetadata_label->updateSongMetadataText(false);
 }
 
 int Player::showMpdConnectionDialog() {
@@ -398,12 +461,15 @@ void Player::expandCollapse() {
 }
 
 void Player::showVolumeSlider() {
-  // volume_slider_frame->setFrameStyle(3);
-  // volume_slider_frame->setFrameShape(QFrame::StyledPanel);
-  volume_slider_frame->show();
-  // volume_slider_frame->move(volume_pushButton->x(), volume_pushButton->y());
-  volume_slider_frame->move(
-      mapToGlobal(volume_pushButton->geometry().topLeft()));
+  volume_popup->show();
+  QPoint position = volume_pushButton->pos();
+
+  position.setX(position.x() + (volume_pushButton->width() / 2));
+  position.setX(position.x() - (volume_popup->width() / 2));
+  position.setY(position.y() + (volume_pushButton->height() / 2));
+  position.setY(position.y() -
+                (volume_popup->height() - (VolumePopup::blur_padding * 2)));
+  volume_popup->move(mapToGlobal(position));
 }
 
 void Player::updateStats() {
@@ -438,11 +504,23 @@ void Player::updateStatus() {
     }
   }
 
-  /*volume_slider->setValue(dataAccess_->volume());
-  if (dataAccess_->timeElapsed() != 0)
-    setIconProgress(dataAccess_->timeElapsed() * 100 /
-                    dataAccess_->timeTotal());
-*/
+  if (dataAccess_->consume()) {
+    if (dataAccess_->state() == MPDPlaybackState::Playing) {
+      doConsumePingpong();
+    } else {
+      setTrackSliderHandleToConsume();
+    }
+  } else {
+    if (!nonConsumeSlider) {
+      restoreTrackSliderHandle();
+    }
+  }
+
+  volume_popup->setVolumeSlider(dataAccess_->volume());
+  /* if (dataAccess_->timeElapsed() != 0)
+     setIconProgress(dataAccess_->timeElapsed() * 100 /
+                     dataAccess_->timeTotal());
+ */
   if (dataAccess_->state() == MPDPlaybackState::Stopped ||
       dataAccess_->state() == MPDPlaybackState::Inactive) {
     play_pause_pushButton->setIcon(
@@ -492,6 +570,8 @@ void Player::updateStatus() {
       (lastState == MPDPlaybackState::Stopped &&
        dataAccess_->state() == MPDPlaybackState::Playing) ||
       lastSongId != dataAccess_->songId()) {
+    dataAccess_->getMPDSongMetadata();
+    // truncateSongMetadataLabelString();
   }
   // mpd.currentSong();
 
@@ -517,7 +597,7 @@ void Player::updateStatus() {
 
   // Set TrayIcon tooltip
   QString text;
-  text += "time: " + timeElapsedFormattedString;
+  text += "Todi: " + timeElapsedFormattedString;
   if (trayIcon != nullptr) trayIcon->setToolTip(text);
 
   // Check if playlist has changed and update if needed
@@ -541,7 +621,9 @@ void Player::playPauseTrack() {
   else if (dataAccess_->state() == MPDPlaybackState::Paused)
     playbackCtrlr_->pause(0);
   else
-    playbackCtrlr_->playId(lastSongId);
+    // playbackCtrlr_->playId(lastSongId);
+    //
+    playbackCtrlr_->play(0);
 
   dataAccess_->getMPDStatus();
 }
@@ -573,10 +655,7 @@ void Player::seekForward() {
 
 void Player::positionSliderReleased() { draggingPositionSlider = false; }
 
-void Player::setAlbumCover(QImage image, QString artist, QString album) {
-  Q_UNUSED(artist);
-  Q_UNUSED(album);
-
+void Player::setAlbumCover(QImage image) {
   qDebug("setalbum cover ()");
   if (image.isNull()) {
     albumcover_label->setText("No cover available");
@@ -584,10 +663,36 @@ void Player::setAlbumCover(QImage image, QString artist, QString album) {
   }
 
   // Display image
-  QPixmap pixmap = QPixmap::fromImage(image);
-  pixmap = pixmap.scaled(QSize(150, 150), Qt::KeepAspectRatio,
+  albumcover_label->setScaledContents(true);
+  QPixmap originalPix = QPixmap::fromImage(image);
+  QPixmap pixmap = originalPix;
+  pixmap = pixmap.scaled(albumcover_label->size(), Qt::KeepAspectRatio,
                          Qt::SmoothTransformation);
+  QPainter painter(&pixmap);
+  QPen pen(QColor(242, 242, 242), 2);
+  painter.setPen(pen);
+  painter.drawRect(pixmap.rect());
+
   albumcover_label->setPixmap(pixmap);
+
+  // Tooltip
+  QString toolTip = QString("<table>");
+  toolTip += QString(
+                 "<tr><td align=\"right\"><b>Artist:</b></td><td>%1</td></tr>"
+                 "<tr><td align=\"right\"><b>Album:</b></td><td>%2</td></tr>"
+                 "<tr><td align=\"right\"><b>Year:</b></td><td>%3</td></tr>")
+                 .arg(dataAccess_->artist())
+                 .arg(dataAccess_->album())
+                 .arg(QString::number(dataAccess_->date()));
+  toolTip += "</table>";
+  QByteArray bytes;
+  QBuffer buffer(&bytes);
+  originalPix.save(&buffer, "PNG", 100);
+  toolTip += QString("<br/><img src=\"data:image/png;base64, %0\"/>")
+                 .arg(QString(bytes.toBase64()));
+  albumcover_label->setToolTip(toolTip);
+  songMetadata_label->updateSongMetadata(dataAccess_->title(),
+                                         dataAccess_->album());
 
   // Save image to avoid downloading it next time
   /*QDir dir(QDir::home());
@@ -638,36 +743,206 @@ void Player::trayIconUpdateProgress(int value) {
     }
 
   } else {
-    setTrayIconProgress(SystemTrayProgress::EighthOctave);
+    if (systemTrayProgress != SystemTrayProgress::EighthOctave) {
+      setTrayIconProgress(SystemTrayProgress::EighthOctave);
+    }
   }
 }
 
+void Player::setVolume(quint8 value) { playbackOptionsCtrlr_->setvol(value); }
+
+void Player::showCurrentSongMetadata() {
+  QMessageBox mBox;
+  mBox.setWindowTitle("Song Metadata");
+  // dataAccess_->getMPDSongMetadata();
+  QString metadata;
+  metadata = QString("File : ") + dataAccess_->file() + "\n";
+  metadata = metadata + QString("Artist : ") + dataAccess_->artist() + "\n";
+  metadata = metadata + QString("Album : ") + dataAccess_->album() + "\n";
+  metadata = metadata + QString("AlbumId : ") + dataAccess_->albumId() + "\n";
+  metadata =
+      metadata + QString("Album Artist : ") + dataAccess_->albumArtist() + "\n";
+  metadata = metadata + QString("Title : ") + dataAccess_->title() + "\n";
+  metadata = metadata + QString("Track : ") +
+             QString::number(dataAccess_->track()) + "\n";
+  metadata = metadata + QString("Name : ") + dataAccess_->name() + "\n";
+  metadata = metadata + QString("Genre : ") + dataAccess_->genre() + "\n";
+  metadata = metadata + QString("Date : ") +
+             QString::number(dataAccess_->date()) + "\n";
+  metadata = metadata + QString("Composer : ") + dataAccess_->comment() + "\n";
+  metadata =
+      metadata + QString("Performer : ") + dataAccess_->performer() + "\n";
+  metadata = metadata + QString("Comment : ") + dataAccess_->comment() + "\n";
+  metadata = metadata + QString("Disc : ") +
+             QString::number(dataAccess_->disc()) + "\n";
+  metadata = metadata + QString("Time : ") +
+             QString::number(dataAccess_->time()) + "\n";
+  metadata =
+      metadata + QString("Id : ") + QString::number(dataAccess_->id()) + "\n";
+  metadata = metadata + QString("Last Modified : ") +
+             dataAccess_->lastModified() + "\n";
+  metadata =
+      metadata + QString("Pos : ") + QString::number(dataAccess_->pos()) + "\n";
+
+  mBox.setText(metadata);
+  mBox.exec();
+}
+
 void Player::setTrayIconProgress(Player::SystemTrayProgress trayProgress) {
+  QPixmap traypix;
   switch (trayProgress) {
     case SystemTrayProgress::FirstOctave:
-      trayIcon->setIcon(QPixmap(":/icons/tray/onebyeight.svg"));
+
+      if (!QPixmapCache::find("onebyeight", &traypix)) {
+        traypix.load(":/icons/tray/onebyeight.svg");
+        QPixmapCache::insert("onebyeight", traypix);
+      }
+      trayIcon->setIcon(traypix);
       break;
     case SystemTrayProgress::SecondOctave:
-      trayIcon->setIcon(QPixmap(":/icons/tray/twobyeight.svg"));
+      if (!QPixmapCache::find("twobyeight", &traypix)) {
+        traypix.load(":/icons/tray/twobyeight.svg");
+        QPixmapCache::insert("twobyeight", traypix);
+      }
+      trayIcon->setIcon(traypix);
       break;
     case SystemTrayProgress::ThirdOctave:
-      trayIcon->setIcon(QPixmap(":/icons/tray/threebyeight.svg"));
+      if (!QPixmapCache::find("threebyeight", &traypix)) {
+        traypix.load(":/icons/tray/threebyeight.svg");
+        QPixmapCache::insert("threebyeight", traypix);
+      }
+      trayIcon->setIcon(traypix);
       break;
     case SystemTrayProgress::FourthOctave:
-      trayIcon->setIcon(QPixmap(":/icons/tray/fourbyeight.svg"));
+      if (!QPixmapCache::find("fourbyeight", &traypix)) {
+        traypix.load(":/icons/tray/fourbyeight.svg");
+        QPixmapCache::insert("fourbyeight", traypix);
+      }
+      trayIcon->setIcon(traypix);
       break;
     case SystemTrayProgress::FifthOctave:
-      trayIcon->setIcon(QPixmap(":/icons/tray/fivebyeight.svg"));
+      if (!QPixmapCache::find("fivebyeight", &traypix)) {
+        traypix.load(":/icons/tray/fivebyeight.svg");
+        QPixmapCache::insert("fivebyeight", traypix);
+      }
+      trayIcon->setIcon(traypix);
       break;
     case SystemTrayProgress::SixthOctave:
-      trayIcon->setIcon(QPixmap(":/icons/tray/sixbyeight.svg"));
+      if (!QPixmapCache::find("sixbyeight", &traypix)) {
+        traypix.load(":/icons/tray/sixbyeight.svg");
+        QPixmapCache::insert("sixbyeight", traypix);
+      }
+      trayIcon->setIcon(traypix);
       break;
     case SystemTrayProgress::SeventhOctave:
-      trayIcon->setIcon(QPixmap(":/icons/tray/sevenbyeight.svg"));
+      if (!QPixmapCache::find("sevenbyeight", &traypix)) {
+        traypix.load(":/icons/tray/sevenbyeight.svg");
+        QPixmapCache::insert("sevenbyeight", traypix);
+      }
+      trayIcon->setIcon(traypix);
       break;
     case SystemTrayProgress::EighthOctave:
-      trayIcon->setIcon(QPixmap(":/icons/tray/eightbyeight.svg"));
+      if (!QPixmapCache::find("eightbyeight", &traypix)) {
+        traypix.load(":/icons/tray/eightbyeight.svg");
+        QPixmapCache::insert("eightbyeight", traypix);
+      }
+      trayIcon->setIcon(traypix);
       break;
   }
   systemTrayProgress = trayProgress;
+}
+
+void Player::doConsumePingpong() {
+  if (consumePingpong) {
+    track_slider->setStyleSheet(
+        ".TrackSlider::handle:horizontal{image: "
+        "url(:/icons/dark/edit-consume1.svg);}");
+    consumePingpong = false;
+  } else {
+    track_slider->setStyleSheet(
+        ".TrackSlider::handle:horizontal{image: "
+        "url(:/icons/dark/edit-consume2.svg);}");
+    consumePingpong = true;
+  }
+  if (nonConsumeSlider) {
+    nonConsumeSlider = false;
+  }
+}
+
+void Player::restoreTrackSliderHandle() {
+  track_slider->setStyleSheet(
+      ".TrackSlider::groove:horizontal { border: 0px solid #999999; height: "
+      "3px; "
+      "background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 #B1B1B1, "
+      "stop:1 #c4c4c4); "
+      "margin: 0px 0; } .TrackSlider::handle:horizontal {"
+      "background: qlineargradient(x1:0, y1:0, x2:1, y2:1, stop:0 #eff0f1, "
+      "stop:1 #eff0f1);"
+      "border: 0px solid #5c5c5c;width: 2px;margin: -2px 0; }"
+      ".TrackSlider::sub-page:horizontal {"
+      "background: qlineargradient(x1: 0, y1: 0,    x2: 0, y2: 1,"
+      "stop: 0 #3daee9, stop: 1 #3daee9); width: 3px; margin: 0px 0;}");
+  nonConsumeSlider = true;
+}
+
+void Player::setTrackSliderHandleToConsume() {
+  track_slider->setStyleSheet(
+      ".TrackSlider::handle:horizontal{image: "
+      "url(:/icons/dark/edit-consume2.svg); border: 0px solid #5c5c5c;width: "
+      "2px;margin: -2px 0; }");
+  if (nonConsumeSlider) {
+    nonConsumeSlider = false;
+  }
+}
+
+bool Player::setupTrayIcon() {
+  if (!QSystemTrayIcon::isSystemTrayAvailable()) {
+    trayIcon = nullptr;
+    return false;
+  }
+
+  trayIcon = new QSystemTrayIcon(this);
+  // trayIcon->installEventFilter(volumeSliderEventHandler);
+  trayIconMenu = new QMenu(this);
+
+  // Setup Actions
+  playPauseAction = new QAction(tr("&Play"), trayIconMenu);
+  playPauseAction->setIcon(
+      IconLoader::load("media-playback-play", IconLoader::LightDark));
+  connect(playPauseAction, SIGNAL(triggered()), this, SLOT(playPauseTrack()));
+
+  stopAction = new QAction(tr("&Stop"), trayIconMenu);
+  stopAction->setIcon(
+      IconLoader::load("media-playback-stop", IconLoader::LightDark));
+  connect(stopAction, SIGNAL(triggered()), this, SLOT(stopTrack()));
+
+  prevAction = new QAction(tr("P&rev"), trayIconMenu);
+  prevAction->setIcon(
+      IconLoader::load("media-skip-backward", IconLoader::LightDark));
+  connect(prevAction, SIGNAL(triggered()), this, SLOT(previousTrack()));
+
+  nextAction = new QAction(tr("&Next"), trayIconMenu);
+  nextAction->setIcon(
+      IconLoader::load("media-skip-forward", IconLoader::LightDark));
+  connect(nextAction, SIGNAL(triggered()), this, SLOT(nextTrack()));
+
+  quitAction = new QAction(tr("&Quit"), trayIconMenu);
+  connect(quitAction, SIGNAL(triggered()), qApp, SLOT(quit()));
+
+  connect(trayIcon, SIGNAL(activated(QSystemTrayIcon::ActivationReason)), this,
+          SLOT(trayIconClicked(QSystemTrayIcon::ActivationReason)));
+
+  // Setup Menu
+  trayIconMenu->addAction(prevAction);
+  trayIconMenu->addAction(nextAction);
+  trayIconMenu->addAction(stopAction);
+  trayIconMenu->addAction(playPauseAction);
+  trayIconMenu->addSeparator();
+  trayIconMenu->addAction(quitAction);
+
+  // trayIcon->setContextMenu(trayIconMenu);
+  trayIcon->setIcon(QIcon(":icons/todi.svg"));
+  trayIcon->setToolTip("Todi");
+
+  return true;
 }

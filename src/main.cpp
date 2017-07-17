@@ -17,7 +17,6 @@
 */
 
 #include <QApplication>
-#include "gui/IconLoader.h"
 #include "gui/Player.h"
 
 // Custom message handler for total control

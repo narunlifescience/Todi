@@ -29,6 +29,26 @@ static const QByteArray statsPlaytimeKey("playtime: ");
 static const QByteArray statsDbPlaytimeKey("db_playtime: ");
 static const QByteArray statsDbUpdateKey("db_update: ");
 
+// MPD song metadata look up keys
+static const QByteArray songMetadataFileKey("file: ");
+static const QByteArray songMetadataTimeKey("Time: ");
+static const QByteArray songMetadataAlbumKey("Album: ");
+static const QByteArray songMetadataArtistKey("Artist: ");
+static const QByteArray songMetadataAlbumArtistKey("AlbumArtist: ");
+static const QByteArray songMetadataComposerKey("Composer: ");
+static const QByteArray songMetadataTitleKey("Title: ");
+static const QByteArray songMetadataTrackKey("Track: ");
+static const QByteArray songMetadataIdKey("Id: ");
+static const QByteArray songMetadataDiscKey("Disc: ");
+static const QByteArray songMetadataDateKey("Date: ");
+static const QByteArray songMetadataGenreKey("Genre: ");
+static const QByteArray songMetadataNameKey("Name: ");
+static const QByteArray songMetadataAlbumIdKey("MUSICBRAINZ_ALBUMID: ");
+static const QByteArray songMetadataPerformerKey("Performer: ");
+static const QByteArray songMetadataCommentKey("Comment: ");
+static const QByteArray songMetadataLastModifiedKey("Last-Modified: ");
+static const QByteArray songMetadataPosKey("Pos: ");
+
 // MPD look up values
 static const QByteArray enabledValue("1");
 static const QByteArray PlayValue("play");
@@ -129,4 +149,67 @@ MPDStatsValues MPDdataParser::parseStats(const QByteArray &data) {
   }
   lines.clear();
   return statsValues;
+}
+
+MPDSongMetadata MPDdataParser::parseSongMetadata(const QByteArray &data) {
+  MPDSongMetadata songMetadataValues;
+  QList<QByteArray> lines = data.split('\n');
+  foreach (const QByteArray &line, lines) {
+    if (line.startsWith(songMetadataFileKey)) {
+      songMetadataValues.file =
+          QString::fromUtf8(line.mid(songMetadataFileKey.length()));
+    } else if (line.startsWith(songMetadataTimeKey)) {
+      songMetadataValues.time = line.mid(songMetadataTimeKey.length()).toInt();
+    } else if (line.startsWith(songMetadataAlbumKey)) {
+      songMetadataValues.album =
+          QString::fromUtf8(line.mid(songMetadataAlbumKey.length()));
+    } else if (line.startsWith(songMetadataArtistKey)) {
+      songMetadataValues.artist =
+          QString::fromUtf8(line.mid(songMetadataArtistKey.length()));
+    } else if (line.startsWith(songMetadataAlbumArtistKey)) {
+      songMetadataValues.albumArtist =
+          QString::fromUtf8(line.mid(songMetadataAlbumArtistKey.length()));
+    } else if (line.startsWith(songMetadataComposerKey)) {
+      songMetadataValues.comment =
+          QString::fromUtf8(line.mid(songMetadataComposerKey.length()));
+    } else if (line.startsWith(songMetadataTitleKey)) {
+      songMetadataValues.title =
+          QString::fromUtf8(line.mid(songMetadataTitleKey.length()));
+    } else if (line.startsWith(songMetadataTrackKey)) {
+      int v = line.mid(songMetadataTrackKey.length()).split('/').at(0).toInt();
+      songMetadataValues.track = v < 0 ? 0 : v;
+    } else if (line.startsWith(songMetadataIdKey)) {
+      songMetadataValues.id = line.mid(songMetadataIdKey.length()).toUInt();
+    } else if (line.startsWith(songMetadataDiscKey)) {
+      int v = line.mid(songMetadataDiscKey.length()).split('/').at(0).toInt();
+      songMetadataValues.disc = v < 0 ? 0 : v;
+    } else if (line.startsWith(songMetadataDateKey)) {
+      QByteArray value = line.mid(songMetadataDateKey.length());
+      int v = value.length() > 4 ? value.left(4).toUInt() : value.toUInt();
+      songMetadataValues.date = v < 0 ? 0 : v;
+    } else if (line.startsWith(songMetadataGenreKey)) {
+      songMetadataValues.genre =
+          QString::fromUtf8(line.mid(songMetadataGenreKey.length()));
+    } else if (line.startsWith(songMetadataNameKey)) {
+      songMetadataValues.name =
+          QString::fromUtf8(line.mid(songMetadataNameKey.length()));
+    } else if (line.startsWith(songMetadataAlbumIdKey)) {
+      songMetadataValues.albumId =
+          QString::fromUtf8(line.mid(songMetadataAlbumIdKey.length()));
+    } else if (line.startsWith(songMetadataPerformerKey)) {
+      songMetadataValues.performer =
+          QString::fromUtf8(line.mid(songMetadataPerformerKey.length()));
+    } else if (line.startsWith(songMetadataCommentKey)) {
+      songMetadataValues.comment =
+          QString::fromUtf8(line.mid(songMetadataCommentKey.length()));
+    } else if (line.startsWith(songMetadataLastModifiedKey)) {
+      songMetadataValues.lastModified =
+          QString::fromUtf8(line.mid(songMetadataLastModifiedKey.length()));
+    } else if (line.startsWith(songMetadataPosKey)) {
+      songMetadataValues.pos =
+          QString::fromUtf8(line.mid(songMetadataPosKey.length())).toUInt();
+    }
+  }
+  lines.clear();
+  return songMetadataValues;
 }

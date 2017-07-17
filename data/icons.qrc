@@ -10,6 +10,8 @@
         <file>icons/dark/media-playback-volume.svg</file>
         <file>icons/dark/edit-find.svg</file>
         <file>icons/dark/view-media-playlist.svg</file>
+        <file>icons/dark/edit-consume1.svg</file>
+        <file>icons/dark/edit-consume2.svg</file>
         <file>icons/light/edit-close.svg</file>
         <file>icons/light/edit-expand.svg</file>
         <file>icons/light/edit-collapse.svg</file>
@@ -20,6 +22,8 @@
         <file>icons/light/media-playback-volume.svg</file>
         <file>icons/light/edit-find.svg</file>
         <file>icons/light/view-media-playlist.svg</file>
+        <file>icons/light/edit-consume1.svg</file>
+        <file>icons/light/edit-consume2.svg</file>
         <file>icons/tray/onebyeight.svg</file>
         <file>icons/tray/twobyeight.svg</file>
         <file>icons/tray/threebyeight.svg</file>

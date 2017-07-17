@@ -19,12 +19,14 @@
 #include "mpdmodel.h"
 #include "mpdsocket.h"
 #include "playbackcontroller.h"
+#include "playbackoptionscontroller.h"
 
 MPDClient::MPDClient(QObject *parent)
     : QObject(parent),
       mpdSocket_(new MPDSocket(this)),
       dataAccess_(new MPDdata(this, mpdSocket_)),
-      playbackCtrlr_(new PlaybackController(this, mpdSocket_)) {}
+      playbackCtrlr_(new PlaybackController(this, mpdSocket_)),
+      playbackOptionsCtrlr_(new PlaybackOptionsController(this, mpdSocket_)) {}
 
 MPDClient::~MPDClient() {}
 
@@ -45,4 +47,9 @@ std::shared_ptr<MPDdata> MPDClient::getSharedMPDdataPtr() const {
 std::shared_ptr<PlaybackController> MPDClient::getSharedPlaybackControllerPtr()
     const {
   return playbackCtrlr_;
+}
+
+std::shared_ptr<PlaybackOptionsController>
+MPDClient::getSharedPlaybackOptionsControllerPtr() const {
+  return playbackOptionsCtrlr_;
 }

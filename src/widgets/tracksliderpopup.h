@@ -44,6 +44,7 @@ class TrackSliderPopup : public QWidget {
   static const int kBorderRadius;
   static const qreal kBlurRadius;
 
+  void UpdateBackground();
   void UpdatePixmap();
   void UpdatePosition();
 

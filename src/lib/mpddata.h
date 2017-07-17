@@ -16,8 +16,10 @@ class MPDdata : public QObject {
   ~MPDdata();
   void updateMpdStatus(const MPDStatusValues &newStatusValues);
   void updateMpdStats(const MPDStatsValues &newStatsValues);
+  void updateMpdSongMetadata(const MPDSongMetadata &newSongMetadataValues);
   void getMPDStatus();
   void getMPDStats();
+  void getMPDSongMetadata();
 
   // MPD status
   qint8 volume() const;
@@ -53,16 +55,40 @@ class MPDdata : public QObject {
   time_t dbUpdate() const;
   MPDStatsValues getStatsValues() const;
 
+  // MPD song metadata
+  QString file() const;
+  QString artist() const;
+  QString album() const;
+  QString albumId() const;
+  QString albumArtist() const;
+  QString title() const;
+  quint16 track() const;
+  QString name() const;
+  QString genre() const;
+  quint16 date() const;
+  QString composer() const;
+  QString performer() const;
+  QString comment() const;
+  quint8 disc() const;
+  quint16 time() const;
+  qint32 id() const;
+  QString lastModified() const;
+  uint pos() const;
+  MPDSongMetadata getSongMetadataValues() const;
+
 signals:
   void MPDStatusUpdated();
   void MPDStatsUpdated();
+  void MPDSongMetadataUpdated(QString filename);
 
  private:
   std::shared_ptr<MPDSocket> mpdSocket_;
   MPDStatusValues statusValues_;
   MPDStatsValues statsValues_;
+  MPDSongMetadata songMetadataValues_;
   static const QByteArray statusCommand;
   static const QByteArray statsCommand;
+  static const QByteArray songMetadataCommand;
 };
 
 #endif  // STATUS_H
