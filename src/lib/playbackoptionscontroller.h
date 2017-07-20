@@ -33,17 +33,17 @@ class PlaybackOptionsController : public QObject {
  signals:
 
  public slots:
-  void consume(quint8 toggle);
-  void crossfade(int seconds);
+  bool consume(quint8 toggle);
+  bool crossfade(int seconds);
   //void mixrampdb();
   //void mixrampdelay();
-  void random(quint8 toggle);
-  void repeat(quint8 toggle);
-  void setvol(quint8 vol);
-  void single(quint8 toggle);
+  bool random(quint8 toggle);
+  bool repeat(quint8 toggle);
+  bool setvol(quint8 vol);
+  bool single(quint8 toggle);
   //void replay_gain_mode();
   //void replay_gain_status();
-  void volume(int volChange);
+  bool volume(int volChange);
 
  private:
   std::shared_ptr<MPDSocket> mpdSocket_;

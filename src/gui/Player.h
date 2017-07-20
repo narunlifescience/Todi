@@ -35,20 +35,22 @@ class Ui_Player;
 class QHBoxLayout;
 class QGridLayout;
 
+class Application;
 class MPDClient;
 class MPDdata;
 class PlaybackController;
 class PlaybackOptionsController;
 class TrackSlider;
 class VolumePopup;
-class TagReader;
-class SongMetadataLabel;
+class CurrentArtLoader;
+class CurrentSongMetadataLabel;
+class CurrentCoverArtLabel;
 
 class Player : public QWidget {
   Q_OBJECT
 
  public:
-  Player(QWidget *parent = nullptr);
+  Player(Application *app, QWidget *parent = nullptr);
   ~Player();
 
  protected:
@@ -62,13 +64,14 @@ class Player : public QWidget {
 
  private:
   Ui_Player *ui_;
+  Application *app_;
   QPoint dragPosition;
 
-  std::unique_ptr<MPDClient> mpdClient_;
+  MPDClient *mpdClient_;
   std::shared_ptr<MPDdata> dataAccess_;
   std::shared_ptr<PlaybackController> playbackCtrlr_;
   std::shared_ptr<PlaybackOptionsController> playbackOptionsCtrlr_;
-  TagReader *tagreader_;
+  CurrentArtLoader *currentArtLoader_;
 
   MPDPlaybackState lastState;
   qint32 lastSongId;
@@ -91,8 +94,8 @@ class Player : public QWidget {
   QPushButton *playlist_pushButton;
   TrackSlider *track_slider;
   QLabel *timer_label;
-  QLabel *albumcover_label;
-  SongMetadataLabel *songMetadata_label;
+  CurrentCoverArtLabel *currentCoverArt_label;
+  CurrentSongMetadataLabel *currentSongMetadata_label;
   VolumePopup *volume_popup;
   bool resize_status;
   QSystemTrayIcon *trayIcon;
@@ -141,7 +144,6 @@ class Player : public QWidget {
   void seekBackward();
   void seekForward();
   void positionSliderReleased();
-  void setAlbumCover(QImage);
   void trayIconClicked(QSystemTrayIcon::ActivationReason reason);
   void trayIconUpdateProgress(int value);
   void setVolume(quint8 value);

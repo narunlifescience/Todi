@@ -45,31 +45,35 @@
 #include <QToolTip>
 #include <QWheelEvent>
 
+#include "../core/application.h"
 #include "AboutDialog.h"
 #include "MpdConnectionDialog.h"
 #include "globals.h"
 #include "widgets/TrackSlider.h"
 #include "widgets/VolumePopup.h"
-#include "widgets/songmetadatalabel.h"
+#include "widgets/currentcoverartlabel.h"
+#include "widgets/currentsongmetadatalabel.h"
 
 #include "mpdclient.h"
 #include "mpddata.h"
 #include "playbackcontroller.h"
 #include "playbackoptionscontroller.h"
-#include "tagger/tagreader.h"
+#include "tagger/currentartloader.h"
 
 const int Player::constBlurRadius_ = 5;
 
-Player::Player(QWidget *parent)
+Player::Player(Application *app, QWidget *parent)
     : QWidget(
           parent,
           Qt::FramelessWindowHint | Qt::WindowStaysOnTopHint | Qt::SubWindow),
       ui_(new Ui_Player),
-      mpdClient_(new MPDClient(this)),
-      dataAccess_(nullptr),
-      playbackCtrlr_(nullptr),
-      playbackOptionsCtrlr_(nullptr),
-      tagreader_(new TagReader(this)),
+      app_(app),
+      mpdClient_(app_->mpdClient()),
+      dataAccess_(app_->mpdClient()->getSharedMPDdataPtr()),
+      playbackCtrlr_(app_->mpdClient()->getSharedPlaybackControllerPtr()),
+      playbackOptionsCtrlr_(
+          app_->mpdClient()->getSharedPlaybackOptionsControllerPtr()),
+      currentArtLoader_(app_->currentArtLoader()),
       lastState(MPDPlaybackState::Inactive),
       lastSongId(-1),
       fetchStatsFactor(0),
@@ -86,8 +90,8 @@ Player::Player(QWidget *parent)
       playlist_pushButton(new QPushButton(this)),
       track_slider(new TrackSlider(Qt::Horizontal, this)),
       timer_label(new QLabel(this)),
-      albumcover_label(new QLabel(this)),
-      songMetadata_label(new SongMetadataLabel(this)),
+      currentCoverArt_label(new CurrentCoverArtLabel(app_, this)),
+      currentSongMetadata_label(new CurrentSongMetadataLabel(app_, this)),
       volume_popup(new VolumePopup(this)),
       resize_status(false),
       consumePingpong(true),
@@ -97,10 +101,6 @@ Player::Player(QWidget *parent)
 
   IconLoader::init();
   IconLoader::lumen_ = IconLoader::isLight(Qt::black);
-
-  dataAccess_ = mpdClient_->getSharedMPDdataPtr();
-  playbackCtrlr_ = mpdClient_->getSharedPlaybackControllerPtr();
-  playbackOptionsCtrlr_ = mpdClient_->getSharedPlaybackOptionsControllerPtr();
 
   this->setFixedHeight(50);
   widget->setFixedHeight(40);
@@ -211,12 +211,12 @@ Player::Player(QWidget *parent)
   vboxplaypauseslidertimer->addLayout(layout);
   vboxplaypauseslidertimer->addLayout(slidertimerlayout);
 
-  //previous_pushButton->hide();
-  //play_pause_pushButton->hide();
-  //next_pushButton->hide();
-  //volume_pushButton->hide();
-  //track_slider->hide();
-  //timer_label->hide();
+  // previous_pushButton->hide();
+  // play_pause_pushButton->hide();
+  // next_pushButton->hide();
+  // volume_pushButton->hide();
+  // track_slider->hide();
+  // timer_label->hide();
 
   QHBoxLayout *hboxfinal = new QHBoxLayout(widget);
   // hboxfinal->setContentsMargins(3, 3, 0, 3);
@@ -224,27 +224,19 @@ Player::Player(QWidget *parent)
   hboxfinal->setSpacing(5);
   // hboxfinal->addWidget(new QSizeGrip(widget), 0, Qt::AlignBottom |
   // Qt::AlignLeft);
-  songMetadata_label->hide();
+  currentSongMetadata_label->hide();
   hboxfinal->addLayout(expandcollapsecloselayout, 0);
-  hboxfinal->addWidget(albumcover_label, 1);
-  hboxfinal->addWidget(songMetadata_label, 2);
+  hboxfinal->addWidget(currentCoverArt_label, 1);
+  hboxfinal->addWidget(currentSongMetadata_label, 2);
   hboxfinal->addLayout(vboxplaypauseslidertimer, 3);
   // hboxfinal->addWidget(new QSizeGrip(widget), 0, Qt::AlignBottom |
   // Qt::AlignRight);
-  songMetadata_label->setText("Todi");
 
   widget->layout()->setSizeConstraint(QLayout::SetNoConstraint);
   timer_label->setText("--:--");
-  QPixmap pixmap(":/icons/nocover.svg");
-  albumcover_label->setFixedWidth(widget->height());
-  albumcover_label->setFixedHeight(widget->height());
-  albumcover_label->resize(widget->height(), widget->height());
-  albumcover_label->setPixmap(
-      pixmap.scaled(albumcover_label->size(), Qt::KeepAspectRatio));
-  albumcover_label->setPixmap(pixmap.scaled(albumcover_label->size(),
-                                            Qt::KeepAspectRatioByExpanding,
-                                            Qt::SmoothTransformation));
-  albumcover_label->setScaledContents(true);
+
+  currentCoverArt_label->setFixedWidth(widget->height());
+  currentCoverArt_label->setFixedHeight(widget->height());
 
   this->setMouseTracking(true);
 
@@ -347,10 +339,8 @@ Player::Player(QWidget *parent)
           &Player::setVolume);
 
   // Cover art loading
-  connect(tagreader_, &TagReader::coverArtProcessed, this,
-          &Player::setAlbumCover);
-  connect(dataAccess_.get(), &MPDdata::MPDSongMetadataUpdated, tagreader_,
-          &TagReader::loadCoverArt);
+  connect(dataAccess_.get(), &MPDdata::MPDSongMetadataUpdated,
+          currentArtLoader_, &CurrentArtLoader::loadCoverArt);
 
   // update status & stats when starting the application
   dataAccess_->getMPDStatus();
@@ -384,11 +374,11 @@ void Player::leaveEvent(QEvent *) {
   volume_pushButton->hide();
   track_slider->hide();
   timer_label->hide();
-  songMetadata_label->show();
+  currentSongMetadata_label->show();
 }
 
 void Player::enterEvent(QEvent *) {
-  songMetadata_label->hide();
+  currentSongMetadata_label->hide();
   previous_pushButton->show();
   play_pause_pushButton->show();
   next_pushButton->show();
@@ -423,9 +413,9 @@ void Player::mouseMoveEvent(QMouseEvent *event) {
 
 void Player::resizeEvent(QResizeEvent *) {
   if (widget->width() > 200) {
-    albumcover_label->show();
+    currentCoverArt_label->show();
   } else {
-    albumcover_label->hide();
+    currentCoverArt_label->hide();
   }
   if (widget->width() > 350) {
     search_pushButton->show();
@@ -435,11 +425,11 @@ void Player::resizeEvent(QResizeEvent *) {
     playlist_pushButton->hide();
   }
 
-  songMetadata_label->setFixedWidth(track_slider->width() +
-                                    timer_label->width());
+  currentSongMetadata_label->setFixedWidth(track_slider->width() +
+                                           timer_label->width());
   // songMetadata_label->setFixedWidth(layout->contentsRect().width() - 10);
   // while resizing we dont want animation (so pass false as arg)
-  songMetadata_label->updateSongMetadataText(false);
+  currentSongMetadata_label->updateSongMetadataText(false);
 }
 
 int Player::showMpdConnectionDialog() {
@@ -616,14 +606,15 @@ void Player::updateStatus() {
 }
 
 void Player::playPauseTrack() {
-  if (dataAccess_->state() == MPDPlaybackState::Playing)
+  if (dataAccess_->state() == MPDPlaybackState::Playing) {
     playbackCtrlr_->pause(1);
-  else if (dataAccess_->state() == MPDPlaybackState::Paused)
+  } else if (dataAccess_->state() == MPDPlaybackState::Paused) {
     playbackCtrlr_->pause(0);
-  else
-    // playbackCtrlr_->playId(lastSongId);
-    //
-    playbackCtrlr_->play(0);
+  } else {
+    if (!playbackCtrlr_->playId(lastSongId)) {
+      playbackCtrlr_->play(0);
+    }
+  }
 
   dataAccess_->getMPDStatus();
 }
@@ -654,59 +645,6 @@ void Player::seekForward() {
 }
 
 void Player::positionSliderReleased() { draggingPositionSlider = false; }
-
-void Player::setAlbumCover(QImage image) {
-  qDebug("setalbum cover ()");
-  if (image.isNull()) {
-    albumcover_label->setText("No cover available");
-    return;
-  }
-
-  // Display image
-  albumcover_label->setScaledContents(true);
-  QPixmap originalPix = QPixmap::fromImage(image);
-  QPixmap pixmap = originalPix;
-  pixmap = pixmap.scaled(albumcover_label->size(), Qt::KeepAspectRatio,
-                         Qt::SmoothTransformation);
-  QPainter painter(&pixmap);
-  QPen pen(QColor(242, 242, 242), 2);
-  painter.setPen(pen);
-  painter.drawRect(pixmap.rect());
-
-  albumcover_label->setPixmap(pixmap);
-
-  // Tooltip
-  QString toolTip = QString("<table>");
-  toolTip += QString(
-                 "<tr><td align=\"right\"><b>Artist:</b></td><td>%1</td></tr>"
-                 "<tr><td align=\"right\"><b>Album:</b></td><td>%2</td></tr>"
-                 "<tr><td align=\"right\"><b>Year:</b></td><td>%3</td></tr>")
-                 .arg(dataAccess_->artist())
-                 .arg(dataAccess_->album())
-                 .arg(QString::number(dataAccess_->date()));
-  toolTip += "</table>";
-  QByteArray bytes;
-  QBuffer buffer(&bytes);
-  originalPix.save(&buffer, "PNG", 100);
-  toolTip += QString("<br/><img src=\"data:image/png;base64, %0\"/>")
-                 .arg(QString(bytes.toBase64()));
-  albumcover_label->setToolTip(toolTip);
-  songMetadata_label->updateSongMetadata(dataAccess_->title(),
-                                         dataAccess_->album());
-
-  // Save image to avoid downloading it next time
-  /*QDir dir(QDir::home());
-  if (!dir.exists(".Todi")) {
-    if (!dir.mkdir(".Todi")) {
-      qWarning("Couldn't create directory for storing album covers");
-      return;
-    }
-  }
-
-  dir.cd(".Todi");
-  QString file(QFile::encodeName(artist + " - " + album + ".jpg"));
-  image.save(dir.absolutePath() + QDir::separator() + file);*/
-}
 
 void Player::trayIconUpdateProgress(int value) {
   if (value != 0) {

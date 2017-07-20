@@ -14,12 +14,13 @@ LIBS += -L"../3rdparty/taglib/lib" -ltag
 # if you would like qDebug() output please comment out yhe following line
 DEFINES += QT_NO_DEBUG_OUTPUT
 
-HEADERS += gui/AboutDialog.h \
+HEADERS += core/application.h \
+           core/lazy.h \
+           gui/AboutDialog.h \
            gui/Player.h \
            gui/IconLoader.h \
            gui/MpdConnectionDialog.h \
            gui/globals.h \
-           widgets/songmetadatalabel.h \
            widgets/TrackSlider.h \
            widgets/tracksliderpopup.h \
            widgets/VolumePopup.h \
@@ -30,20 +31,22 @@ HEADERS += gui/AboutDialog.h \
            lib/mpddata.h \
            lib/mpddataparser.h \
            lib/playbackoptionscontroller.h \
-           tagger/tagreader.h
+           tagger/currentartloader.h \
+           widgets/currentsongmetadatalabel.h \
+           widgets/currentcoverartlabel.h
 
 FORMS +=   gui/AboutDialog.ui \
            gui/MpdConnectionDialog.ui \
            gui/Player.ui
 
 SOURCES += main.cpp \
+           core/application.cpp \
            gui/AboutDialog.cpp \
            gui/Player.cpp \
            gui/IconLoader.cpp \
            gui/Trayicon.cpp \
            gui/MpdConnectionDialog.cpp \
            gui/globals.cpp \
-           widgets/songmetadatalabel.cpp \
            widgets/TrackSlider.cpp \
            widgets/tracksliderpopup.cpp \
            widgets/VolumePopup.cpp \
@@ -53,4 +56,6 @@ SOURCES += main.cpp \
            lib/mpddata.cpp \
            lib/mpddataparser.cpp \
            lib/playbackoptionscontroller.cpp \
-           tagger/tagreader.cpp
+           tagger/currentartloader.cpp \
+           widgets/currentcoverartlabel.cpp \
+           widgets/currentsongmetadatalabel.cpp

@@ -1,0 +1,77 @@
+#include "currentcoverart.h"
+
+#include <QBuffer>
+#include <QDebug>
+#include <QMouseEvent>
+#include <QPainter>
+#include <QToolTip>
+
+CoverArt::CoverArt(QWidget *parent)
+    : QLabel(parent), image_(new QImage()), mousepressed_(false) {
+  setScaledContents(true);
+  setMouseTracking(true);
+}
+
+void CoverArt::setCoverArt(QImage *image, MPDSongMetadata *songmetadata) {
+  image_ = image;
+  songmetadata_ = songmetadata;
+  updateCoverArt();
+  setCoverArtTooltip();
+}
+
+void CoverArt::setCoverArtTooltip() {
+  if (songmetadata_) {
+    tooltiptext_ = QString("<table>");
+    tooltiptext_ +=
+        QString(
+            "<tr><td align=\"right\"><b>Artist:</b></td><td>%1</td></tr>"
+            "<tr><td align=\"right\"><b>Album:</b></td><td>%2</td></tr>"
+            "<tr><td align=\"right\"><b>Year:</b></td><td>%3</td></tr>")
+            .arg(songmetadata_->artist)
+            .arg(songmetadata_->album)
+            .arg(QString::number(songmetadata_->date));
+    tooltiptext_ += "</table>";
+  }
+
+  /*QByteArray bytes;
+  QBuffer buffer(&bytes);
+  buffer.open(QIODevice::WriteOnly);
+  image_->save(&buffer, "PNG", 100);
+  buffer.close();
+  tooltiptext_ += QString("<br/><img src=\"data:image/png;base64, %0\"/>")
+                      .arg(QString(bytes.toBase64()));*/
+}
+
+void CoverArt::updateCoverArt() {
+  if (image_->isNull()) {
+    setPixmap(QPixmap(":/icons/nocover.svg"));
+    return;
+  }
+
+  // Display image
+  QPixmap pixmap = QPixmap::fromImage(*image_);
+  pixmap = pixmap.scaled(size(), Qt::KeepAspectRatio, Qt::SmoothTransformation);
+  QPainter painter(&pixmap);
+  QPen pen(QColor(242, 242, 242), 2);
+  painter.setPen(pen);
+  painter.drawRect(pixmap.rect());
+
+  setPixmap(pixmap);
+}
+
+void CoverArt::mouseMoveEvent(QMouseEvent *event) {
+  if (!mousepressed_) {
+    QToolTip::showText(event->globalPos(), tooltiptext_, this, rect());
+  }
+  QWidget::mouseMoveEvent(event);
+}
+
+void CoverArt::mousePressEvent(QMouseEvent *event) {
+  mousepressed_ = true;
+  QWidget::mousePressEvent(event);
+}
+
+void CoverArt::mouseReleaseEvent(QMouseEvent *event) {
+  mousepressed_ = false;
+  QWidget::mouseReleaseEvent(event);
+}

@@ -4,16 +4,16 @@
 #include <QImage>
 #include <QObject>
 
-#include <taglib/taglib.h>
 #include <fileref.h>
+#include <taglib/taglib.h>
 
-//class TagLib;
-//class TagLib::FileRef;
+// class TagLib;
+// class TagLib::FileRef;
 
-class TagReader : public QObject {
+class CurrentArtLoader : public QObject {
   Q_OBJECT
  public:
-  explicit TagReader(QObject *parent = nullptr);
+  explicit CurrentArtLoader(QObject *parent = nullptr);
   enum class TagReaderFileType {
     Type_ASF,
     Type_FLAC,
@@ -30,16 +30,17 @@ class TagReader : public QObject {
     Type_UNKNOWN
   };
  signals:
-  void coverArtProcessed(QImage image);
+  void coverArtProcessed(QImage *image) const;
 
  public slots:
   void loadCoverArt(QString filename);
 
  private:
   QByteArray loadEmbededArt(QString filename);
-  TagReaderFileType guessAudioFileType(TagLib::FileRef* fileref) const;
+  TagReaderFileType guessAudioFileType(TagLib::FileRef *fileref) const;
   bool isJpg(const QByteArray &data);
   bool isPng(const QByteArray &data);
+  QImage *image_;
 };
 
 #endif  // COVERLOADER_H

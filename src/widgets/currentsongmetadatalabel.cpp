@@ -19,18 +19,29 @@
 #include <QDebug>
 #include <QTimeLine>
 
-#include "songmetadatalabel.h"
+#include "../core/application.h"
+#include "../lib/mpdclient.h"
+#include "../lib/mpddata.h"
+#include "../tagger/currentartloader.h"
+#include "currentsongmetadatalabel.h"
 
-SongMetadataLabel::SongMetadataLabel(QWidget *parent)
-    : QLabel(parent), showHideAnimation_(new QTimeLine(500, this)) {
+CurrentSongMetadataLabel::CurrentSongMetadataLabel(Application *app,
+                                                   QWidget *parent)
+    : QLabel(parent), app_(app), showHideAnimation_(new QTimeLine(500, this)) {
+  setText("Todi");
   showHideAnimation_->setFrameRange(0, 255);
   connect(showHideAnimation_, &QTimeLine::frameChanged, this,
-          &SongMetadataLabel::setOpacity);
+          &CurrentSongMetadataLabel::setOpacity);
+  connect(
+      app_->currentArtLoader(), &CurrentArtLoader::coverArtProcessed, [&]() {
+        updateSongMetadata(app_->mpdClient()->getSharedMPDdataPtr()->title(),
+                           app_->mpdClient()->getSharedMPDdataPtr()->album());
+      });
 }
 
-SongMetadataLabel::~SongMetadataLabel() {}
+CurrentSongMetadataLabel::~CurrentSongMetadataLabel() {}
 
-void SongMetadataLabel::updateSongMetadataText(bool animate) {
+void CurrentSongMetadataLabel::updateSongMetadataText(bool animate) {
   QFontMetrics fm(this->font());
   QString metadataHtml;
   if (!songMetaData_.first.isEmpty() || !songMetaData_.second.isEmpty()) {
@@ -49,25 +60,27 @@ void SongMetadataLabel::updateSongMetadataText(bool animate) {
   }
 }
 
-void SongMetadataLabel::setOpacity(int value) {
+void CurrentSongMetadataLabel::setOpacity(int value) {
   QString style =
       QString("SongMetadataLabel{color:rgba(200, 200, 200, %1)}").arg(value);
   setStyleSheet(style);
 }
 
-void SongMetadataLabel::showEvent(QShowEvent *) { startAnimation(); }
+void CurrentSongMetadataLabel::showEvent(QShowEvent *) { startAnimation(); }
 
-void SongMetadataLabel::hideEvent(QHideEvent *) { showHideAnimation_->stop(); }
+void CurrentSongMetadataLabel::hideEvent(QHideEvent *) {
+  showHideAnimation_->stop();
+}
 
-void SongMetadataLabel::startAnimation() {
+void CurrentSongMetadataLabel::startAnimation() {
   if (isVisible()) {
     showHideAnimation_->setDirection(QTimeLine::Forward);
     showHideAnimation_->start();
   }
 }
 
-void SongMetadataLabel::updateSongMetadata(const QString arg1,
-                                           const QString arg2) {
+void CurrentSongMetadataLabel::updateSongMetadata(const QString arg1,
+                                                  const QString arg2) {
   songMetaData_.first = arg1;
   songMetaData_.second = arg2;
   updateSongMetadataText();

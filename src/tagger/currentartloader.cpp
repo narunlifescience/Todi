@@ -1,4 +1,4 @@
-#include "tagreader.h"
+#include "currentartloader.h"
 
 #include <aifffile.h>
 #include <asffile.h>
@@ -28,19 +28,19 @@
 #include <QDir>
 #include <QFile>
 
-TagReader::TagReader(QObject* parent) : QObject(parent) {}
+CurrentArtLoader::CurrentArtLoader(QObject* parent)
+    : QObject(parent), image_(new QImage()) {}
 
-void TagReader::loadCoverArt(QString filename) {
+void CurrentArtLoader::loadCoverArt(QString filename) {
   filename = filename.trimmed();
   filename = "/home/arun/Music/" + filename;
   QByteArray bytearray = loadEmbededArt(filename);
-  QImage image;
-  (bytearray == QByteArray()) ? image.load(":/icons/nocover.png")
-                              : image.loadFromData(bytearray);
-  coverArtProcessed(image);
+  (bytearray == QByteArray()) ? image_->load(":/icons/nocover.png")
+                              : image_->loadFromData(bytearray);
+  emit coverArtProcessed(image_);
 }
 
-QByteArray TagReader::loadEmbededArt(QString filename) {
+QByteArray CurrentArtLoader::loadEmbededArt(QString filename) {
   if (filename.isEmpty()) return QByteArray();
 
 #ifdef Q_OS_WIN32
@@ -132,7 +132,7 @@ QByteArray TagReader::loadEmbededArt(QString filename) {
   return QByteArray();
 }
 
-TagReader::TagReaderFileType TagReader::guessAudioFileType(
+CurrentArtLoader::TagReaderFileType CurrentArtLoader::guessAudioFileType(
     TagLib::FileRef* fileref) const {
   if (dynamic_cast<TagLib::ASF::File*>(fileref->file()))
     return TagReaderFileType::Type_ASF;
@@ -162,11 +162,11 @@ TagReader::TagReaderFileType TagReader::guessAudioFileType(
   return TagReaderFileType::Type_UNKNOWN;
 }
 
-bool TagReader::isJpg(const QByteArray& data) {
+bool CurrentArtLoader::isJpg(const QByteArray& data) {
   return data.size() > 9 && data[6] == 'J' && data[7] == 'F' &&
          data[8] == 'I' && data[9] == 'F';
 }
 
-bool TagReader::isPng(const QByteArray& data) {
+bool CurrentArtLoader::isPng(const QByteArray& data) {
   return data.size() > 4 && data[1] == 'P' && data[2] == 'N' && data[3] == 'G';
 }

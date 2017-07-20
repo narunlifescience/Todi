@@ -1,6 +1,22 @@
 #ifndef STATUS_H
 #define STATUS_H
 
+/* This file is part of Todi.
+
+   Copyright 2016, Arun Narayanankutty <n.arun.lifescience@gmail.com>
+
+   Todi is free software: you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation, either version 3 of the License, or
+   (at your option) any later version.
+   Todi is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
+   You should have received a copy of the GNU General Public License
+   along with Todi.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
 #include <QObject>
 #include <memory>
 
@@ -12,11 +28,8 @@ class MPDdata : public QObject {
   Q_OBJECT
  public:
   explicit MPDdata(QObject *parent = nullptr,
-          std::shared_ptr<MPDSocket> mpdSocket = nullptr);
+                   std::shared_ptr<MPDSocket> mpdSocket = nullptr);
   ~MPDdata();
-  void updateMpdStatus(const MPDStatusValues &newStatusValues);
-  void updateMpdStats(const MPDStatsValues &newStatsValues);
-  void updateMpdSongMetadata(const MPDSongMetadata &newSongMetadataValues);
   void getMPDStatus();
   void getMPDStats();
   void getMPDSongMetadata();
@@ -43,7 +56,7 @@ class MPDdata : public QObject {
   quint8 channels() const;
   qint32 updatingDb() const;
   const QString &error() const;
-  MPDStatusValues getStatusValues() const;
+  MPDStatusValues *getStatusValues() const;
 
   // MPD stats
   quint32 artists() const;
@@ -53,7 +66,7 @@ class MPDdata : public QObject {
   quint32 playtime() const;
   quint32 dbPlaytime() const;
   time_t dbUpdate() const;
-  MPDStatsValues getStatsValues() const;
+  MPDStatsValues *getStatsValues() const;
 
   // MPD song metadata
   QString file() const;
@@ -74,18 +87,18 @@ class MPDdata : public QObject {
   qint32 id() const;
   QString lastModified() const;
   uint pos() const;
-  MPDSongMetadata getSongMetadataValues() const;
+  MPDSongMetadata *getSongMetadataValues() const;
 
-signals:
+ signals:
   void MPDStatusUpdated();
   void MPDStatsUpdated();
   void MPDSongMetadataUpdated(QString filename);
 
  private:
   std::shared_ptr<MPDSocket> mpdSocket_;
-  MPDStatusValues statusValues_;
-  MPDStatsValues statsValues_;
-  MPDSongMetadata songMetadataValues_;
+  MPDStatusValues *statusValues_;
+  MPDStatsValues *statsValues_;
+  MPDSongMetadata *songMetadataValues_;
   static const QByteArray statusCommand;
   static const QByteArray statsCommand;
   static const QByteArray songMetadataCommand;

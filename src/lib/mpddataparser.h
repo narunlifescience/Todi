@@ -3,9 +3,10 @@
 #include "mpdmodel.h"
 
 namespace MPDdataParser {
-  MPDStatusValues parseStatus(const QByteArray &data);
-  MPDStatsValues parseStats(const QByteArray &data);
-  MPDSongMetadata parseSongMetadata(const QByteArray &data);
+void parseStatus(const QByteArray &data, MPDStatusValues *statusValues);
+void parseStats(const QByteArray &data, MPDStatsValues *statsValues);
+void parseSongMetadata(const QByteArray &data,
+                       MPDSongMetadata *songMetadataValues);
 }
 
-#endif // MPDDATAPARSER_H
+#endif  // MPDDATAPARSER_H

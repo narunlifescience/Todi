@@ -29,15 +29,15 @@ class PlaybackController : QObject {
       std::shared_ptr<MPDSocket> mpdSocket = nullptr);
   ~PlaybackController();
  public slots:
-  void next() const;
-  void pause(quint8 toggle) const;
-  void play(quint32 song);
-  void playId(quint32 songid);
-  void previous();
-  void seek(quint32 song, quint32 time);
-  void seekId(quint32 songid, quint32 time);
-  void seekCur(quint32 time);
-  void stop();
+  bool next() const;
+  bool pause(quint8 toggle) const;
+  bool play(quint32 song);
+  bool playId(quint32 songid);
+  bool previous();
+  bool seek(quint32 song, quint32 time);
+  bool seekId(quint32 songid, quint32 time);
+  bool seekCur(quint32 time);
+  bool stop();
 
  private:
   std::shared_ptr<MPDSocket> mpdSocket_;

@@ -18,6 +18,7 @@
 
 #include <QApplication>
 #include "gui/Player.h"
+#include "core/application.h"
 
 // Custom message handler for total control
 void logOutput(QtMsgType type, const QMessageLogContext &context,
@@ -55,8 +56,9 @@ int main(int argc, char *argv[]) {
   QCoreApplication::setOrganizationDomain("todi.github.io");
   QApplication::setAttribute(Qt::AA_UseHighDpiPixmaps);
   QApplication::setAttribute(Qt::AA_EnableHighDpiScaling);
-  QApplication app(argc, argv);
-  Player player;
+  QApplication qapp(argc, argv);
+  Application app;
+  Player player(&app);
   player.show();
-  return app.exec();
+  return qapp.exec();
 }

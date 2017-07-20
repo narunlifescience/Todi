@@ -39,30 +39,39 @@ PlaybackOptionsController::PlaybackOptionsController(
 
 PlaybackOptionsController::~PlaybackOptionsController() {}
 
-void PlaybackOptionsController::consume(quint8 toggle) {
-  mpdSocket_->sendCommand(consumeCmd + " " + QByteArray::number(toggle));
+bool PlaybackOptionsController::consume(quint8 toggle) {
+  return mpdSocket_->sendCommand(consumeCmd + " " + QByteArray::number(toggle))
+      .second;
 }
 
-void PlaybackOptionsController::crossfade(int seconds) {
-  mpdSocket_->sendCommand(crossfadeCmd + " " + QByteArray::number(seconds));
+bool PlaybackOptionsController::crossfade(int seconds) {
+  return mpdSocket_
+      ->sendCommand(crossfadeCmd + " " + QByteArray::number(seconds))
+      .second;
 }
 
-void PlaybackOptionsController::random(quint8 toggle) {
-  mpdSocket_->sendCommand(randomCmd + " " + QByteArray::number(toggle));
+bool PlaybackOptionsController::random(quint8 toggle) {
+  return mpdSocket_->sendCommand(randomCmd + " " + QByteArray::number(toggle))
+      .second;
 }
 
-void PlaybackOptionsController::repeat(quint8 toggle) {
-  mpdSocket_->sendCommand(repeatCmd + " " + QByteArray::number(toggle));
+bool PlaybackOptionsController::repeat(quint8 toggle) {
+  return mpdSocket_->sendCommand(repeatCmd + " " + QByteArray::number(toggle))
+      .second;
 }
 
-void PlaybackOptionsController::setvol(quint8 vol) {
-  mpdSocket_->sendCommand(setvolCmd + " " + QByteArray::number(vol));
+bool PlaybackOptionsController::setvol(quint8 vol) {
+  return mpdSocket_->sendCommand(setvolCmd + " " + QByteArray::number(vol))
+      .second;
 }
 
-void PlaybackOptionsController::single(quint8 toggle) {
-  mpdSocket_->sendCommand(singleCmd + " " + QByteArray::number(toggle));
+bool PlaybackOptionsController::single(quint8 toggle) {
+  return mpdSocket_->sendCommand(singleCmd + " " + QByteArray::number(toggle))
+      .second;
 }
 
-void PlaybackOptionsController::volume(int volChange) {
-  mpdSocket_->sendCommand(volumeCmd + " " + QByteArray::number(volChange));
+bool PlaybackOptionsController::volume(int volChange) {
+  return mpdSocket_
+      ->sendCommand(volumeCmd + " " + QByteArray::number(volChange))
+      .second;
 }

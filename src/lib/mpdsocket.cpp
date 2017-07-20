@@ -168,6 +168,7 @@ QPair<QByteArray, bool> MPDSocket::sendCommand(const QByteArray &command,
 }
 
 void MPDSocket::onError(const QAbstractSocket::SocketError socketError) const {
+  // Handle socket errors
   switch (socketError) {
     case QAbstractSocket::ConnectionRefusedError:
       qCritical() << "The connection was refused by the peer (or timed out)";

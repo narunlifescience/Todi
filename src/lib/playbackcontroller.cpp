@@ -35,34 +35,48 @@ PlaybackController::PlaybackController(QObject *parent,
 
 PlaybackController::~PlaybackController() {}
 
-void PlaybackController::next() const { mpdSocket_->sendCommand(nextCmd); }
-
-void PlaybackController::pause(quint8 toggle) const {
-  mpdSocket_->sendCommand(pauseCmd + " " + QByteArray::number(toggle));
+bool PlaybackController::next() const {
+  return mpdSocket_->sendCommand(nextCmd).second;
 }
 
-void PlaybackController::play(quint32 song) {
-  mpdSocket_->sendCommand(playCmd + " " + QByteArray::number(song));
+bool PlaybackController::pause(quint8 toggle) const {
+  return mpdSocket_->sendCommand(pauseCmd + " " + QByteArray::number(toggle))
+      .second;
 }
 
-void PlaybackController::playId(quint32 songid) {
-  mpdSocket_->sendCommand(playIdCmd + " " + QByteArray::number(songid));
+bool PlaybackController::play(quint32 song) {
+  return mpdSocket_->sendCommand(playCmd + " " + QByteArray::number(song))
+      .second;
 }
 
-void PlaybackController::previous() { mpdSocket_->sendCommand(previousCmd); }
-
-void PlaybackController::seek(quint32 song, quint32 time) {
-  mpdSocket_->sendCommand(seekCmd + " " + QByteArray::number(song) + " " +
-                         QByteArray::number(time));
+bool PlaybackController::playId(quint32 songid) {
+  return mpdSocket_->sendCommand(playIdCmd + " " + QByteArray::number(songid))
+      .second;
 }
 
-void PlaybackController::seekId(quint32 songid, quint32 time) {
-  mpdSocket_->sendCommand(seekIdCmd + " " + QByteArray::number(songid) + " " +
-                         QByteArray::number(time));
+bool PlaybackController::previous() {
+  return mpdSocket_->sendCommand(previousCmd).second;
 }
 
-void PlaybackController::seekCur(quint32 time) {
-  mpdSocket_->sendCommand(seekCurCmd + " " + QByteArray::number(time));
+bool PlaybackController::seek(quint32 song, quint32 time) {
+  return mpdSocket_
+      ->sendCommand(seekCmd + " " + QByteArray::number(song) + " " +
+                    QByteArray::number(time))
+      .second;
 }
 
-void PlaybackController::stop() { mpdSocket_->sendCommand(stopCmd); }
+bool PlaybackController::seekId(quint32 songid, quint32 time) {
+  return mpdSocket_
+      ->sendCommand(seekIdCmd + " " + QByteArray::number(songid) + " " +
+                    QByteArray::number(time))
+      .second;
+}
+
+bool PlaybackController::seekCur(quint32 time) {
+  return mpdSocket_->sendCommand(seekCurCmd + " " + QByteArray::number(time))
+      .second;
+}
+
+bool PlaybackController::stop() {
+  return mpdSocket_->sendCommand(stopCmd).second;
+}

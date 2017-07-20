@@ -54,162 +54,160 @@ static const QByteArray enabledValue("1");
 static const QByteArray PlayValue("play");
 static const QByteArray StopValue("stop");
 
-MPDStatusValues MPDdataParser::parseStatus(const QByteArray &data) {
-  MPDStatusValues statusValues;
+void MPDdataParser::parseStatus(const QByteArray &data,
+                                MPDStatusValues *statusValues) {
   QList<QByteArray> lines = data.split('\n');
 
   foreach (const QByteArray &line, lines) {
     if (line.startsWith(statusVolumeKey)) {
-      statusValues.volume =
+      statusValues->volume =
           static_cast<qint8>(line.mid(statusVolumeKey.length()).toInt());
     } else if (line.startsWith(statusConsumeKey)) {
-      statusValues.consume =
+      statusValues->consume =
           (line.mid(statusConsumeKey.length()) == enabledValue) ? true : false;
     } else if (line.startsWith(statusRepeatKey)) {
-      statusValues.repeat =
+      statusValues->repeat =
           (line.mid(statusRepeatKey.length()) == enabledValue) ? true : false;
     } else if (line.startsWith(statusSingleKey)) {
-      statusValues.single =
+      statusValues->single =
           (line.mid(statusSingleKey.length()) == enabledValue) ? true : false;
     } else if (line.startsWith(statusRandomKey)) {
-      statusValues.random =
+      statusValues->random =
           (line.mid(statusRandomKey.length()) == enabledValue) ? true : false;
     } else if (line.startsWith(statusPlaylistKey)) {
-      statusValues.playlist = line.mid(statusPlaylistKey.length()).toUInt();
+      statusValues->playlist = line.mid(statusPlaylistKey.length()).toUInt();
     } else if (line.startsWith(statusPlaylistLengthKey)) {
-      statusValues.playlistLength = static_cast<quint32>(
+      statusValues->playlistLength = static_cast<quint32>(
           line.mid(statusPlaylistLengthKey.length()).toInt());
     } else if (line.startsWith(statusCrossfadeKey)) {
-      statusValues.crossFade = line.mid(statusCrossfadeKey.length()).toInt();
+      statusValues->crossFade = line.mid(statusCrossfadeKey.length()).toInt();
     } else if (line.startsWith(statusStateKey)) {
       QByteArray value = line.mid(statusStateKey.length());
       if (PlayValue == value) {
-        statusValues.state = MPDPlaybackState::Playing;
+        statusValues->state = MPDPlaybackState::Playing;
       } else if (StopValue == value) {
-        statusValues.state = MPDPlaybackState::Stopped;
+        statusValues->state = MPDPlaybackState::Stopped;
       } else {
-        statusValues.state = MPDPlaybackState::Paused;
+        statusValues->state = MPDPlaybackState::Paused;
       }
     } else if (line.startsWith(statusSongKey)) {
-      statusValues.song = line.mid(statusSongKey.length()).toInt();
+      statusValues->song = line.mid(statusSongKey.length()).toInt();
     } else if (line.startsWith(statusSongIdKey)) {
-      statusValues.songId = line.mid(statusSongIdKey.length()).toInt();
+      statusValues->songId = line.mid(statusSongIdKey.length()).toInt();
     } else if (line.startsWith(statusNextSongKey)) {
-      statusValues.nextSong = line.mid(statusNextSongKey.length()).toInt();
+      statusValues->nextSong = line.mid(statusNextSongKey.length()).toInt();
     } else if (line.startsWith(statusNextSongIdKey)) {
-      statusValues.nextSongId = line.mid(statusNextSongIdKey.length()).toInt();
+      statusValues->nextSongId = line.mid(statusNextSongIdKey.length()).toInt();
     } else if (line.startsWith(statusTimeKey)) {
       QList<QByteArray> values = line.mid(statusTimeKey.length()).split(':');
       if (values.length() > 1) {
-        statusValues.timeElapsed = values.at(0).toInt();
-        statusValues.timeTotal = values.at(1).toInt();
+        statusValues->timeElapsed = values.at(0).toInt();
+        statusValues->timeTotal = values.at(1).toInt();
       }
       values.clear();
     } else if (line.startsWith(statusBitrateKey)) {
-      statusValues.bitrate =
+      statusValues->bitrate =
           static_cast<quint16>(line.mid(statusBitrateKey.length()).toUInt());
     } else if (line.startsWith(statusAudioKey)) {
       QList<QByteArray> values = line.mid(statusAudioKey.length()).split(':');
       if (values.length() == 3) {
-        statusValues.samplerate = static_cast<quint16>(values.at(0).toUInt());
-        statusValues.bits = static_cast<quint8>(values.at(1).toUInt());
-        statusValues.channels = static_cast<quint8>(values.at(2).toUInt());
+        statusValues->samplerate = static_cast<quint16>(values.at(0).toUInt());
+        statusValues->bits = static_cast<quint8>(values.at(1).toUInt());
+        statusValues->channels = static_cast<quint8>(values.at(2).toUInt());
       }
       values.clear();
     } else if (line.startsWith(statusUpdatingDbKey)) {
-      statusValues.updatingDb = line.mid(statusUpdatingDbKey.length()).toInt();
+      statusValues->updatingDb = line.mid(statusUpdatingDbKey.length()).toInt();
     } else if (line.startsWith(statusErrorKey)) {
-      statusValues.error = QString::fromUtf8(line.mid(statusErrorKey.length()));
+      statusValues->error =
+          QString::fromUtf8(line.mid(statusErrorKey.length()));
     }
   }
   lines.clear();
-  return statusValues;
 }
 
-MPDStatsValues MPDdataParser::parseStats(const QByteArray &data) {
-  MPDStatsValues statsValues;
+void MPDdataParser::parseStats(const QByteArray &data,
+                               MPDStatsValues *statsValues) {
   QList<QByteArray> lines = data.split('\n');
 
   foreach (const QByteArray &line, lines) {
     if (line.startsWith(statsArtistsKey)) {
-      statsValues.artists = line.mid(statsArtistsKey.length()).toUInt();
+      statsValues->artists = line.mid(statsArtistsKey.length()).toUInt();
     } else if (line.startsWith(statsAlbumsKey)) {
-      statsValues.albums = line.mid(statsAlbumsKey.length()).toUInt();
+      statsValues->albums = line.mid(statsAlbumsKey.length()).toUInt();
     } else if (line.startsWith(statsSongsKey)) {
-      statsValues.songs = line.mid(statsSongsKey.length()).toUInt();
+      statsValues->songs = line.mid(statsSongsKey.length()).toUInt();
     } else if (line.startsWith(statsUptimeKey)) {
-      statsValues.uptime = line.mid(statsUptimeKey.length()).toUInt();
+      statsValues->uptime = line.mid(statsUptimeKey.length()).toUInt();
     } else if (line.startsWith(statsPlaytimeKey)) {
-      statsValues.playtime = line.mid(statsPlaytimeKey.length()).toUInt();
+      statsValues->playtime = line.mid(statsPlaytimeKey.length()).toUInt();
     } else if (line.startsWith(statsDbPlaytimeKey)) {
-      statsValues.dbPlaytime = line.mid(statsDbPlaytimeKey.length()).toUInt();
+      statsValues->dbPlaytime = line.mid(statsDbPlaytimeKey.length()).toUInt();
     } else if (line.startsWith(statsDbUpdateKey)) {
-      statsValues.dbUpdate = line.mid(statsDbUpdateKey.length()).toUInt();
+      statsValues->dbUpdate = line.mid(statsDbUpdateKey.length()).toUInt();
     }
   }
   lines.clear();
-  return statsValues;
 }
 
-MPDSongMetadata MPDdataParser::parseSongMetadata(const QByteArray &data) {
-  MPDSongMetadata songMetadataValues;
+void MPDdataParser::parseSongMetadata(const QByteArray &data,
+                                      MPDSongMetadata *songMetadataValues) {
   QList<QByteArray> lines = data.split('\n');
   foreach (const QByteArray &line, lines) {
     if (line.startsWith(songMetadataFileKey)) {
-      songMetadataValues.file =
+      songMetadataValues->file =
           QString::fromUtf8(line.mid(songMetadataFileKey.length()));
     } else if (line.startsWith(songMetadataTimeKey)) {
-      songMetadataValues.time = line.mid(songMetadataTimeKey.length()).toInt();
+      songMetadataValues->time = line.mid(songMetadataTimeKey.length()).toInt();
     } else if (line.startsWith(songMetadataAlbumKey)) {
-      songMetadataValues.album =
+      songMetadataValues->album =
           QString::fromUtf8(line.mid(songMetadataAlbumKey.length()));
     } else if (line.startsWith(songMetadataArtistKey)) {
-      songMetadataValues.artist =
+      songMetadataValues->artist =
           QString::fromUtf8(line.mid(songMetadataArtistKey.length()));
     } else if (line.startsWith(songMetadataAlbumArtistKey)) {
-      songMetadataValues.albumArtist =
+      songMetadataValues->albumArtist =
           QString::fromUtf8(line.mid(songMetadataAlbumArtistKey.length()));
     } else if (line.startsWith(songMetadataComposerKey)) {
-      songMetadataValues.comment =
+      songMetadataValues->comment =
           QString::fromUtf8(line.mid(songMetadataComposerKey.length()));
     } else if (line.startsWith(songMetadataTitleKey)) {
-      songMetadataValues.title =
+      songMetadataValues->title =
           QString::fromUtf8(line.mid(songMetadataTitleKey.length()));
     } else if (line.startsWith(songMetadataTrackKey)) {
       int v = line.mid(songMetadataTrackKey.length()).split('/').at(0).toInt();
-      songMetadataValues.track = v < 0 ? 0 : v;
+      songMetadataValues->track = v < 0 ? 0 : v;
     } else if (line.startsWith(songMetadataIdKey)) {
-      songMetadataValues.id = line.mid(songMetadataIdKey.length()).toUInt();
+      songMetadataValues->id = line.mid(songMetadataIdKey.length()).toUInt();
     } else if (line.startsWith(songMetadataDiscKey)) {
       int v = line.mid(songMetadataDiscKey.length()).split('/').at(0).toInt();
-      songMetadataValues.disc = v < 0 ? 0 : v;
+      songMetadataValues->disc = v < 0 ? 0 : v;
     } else if (line.startsWith(songMetadataDateKey)) {
       QByteArray value = line.mid(songMetadataDateKey.length());
       int v = value.length() > 4 ? value.left(4).toUInt() : value.toUInt();
-      songMetadataValues.date = v < 0 ? 0 : v;
+      songMetadataValues->date = v < 0 ? 0 : v;
     } else if (line.startsWith(songMetadataGenreKey)) {
-      songMetadataValues.genre =
+      songMetadataValues->genre =
           QString::fromUtf8(line.mid(songMetadataGenreKey.length()));
     } else if (line.startsWith(songMetadataNameKey)) {
-      songMetadataValues.name =
+      songMetadataValues->name =
           QString::fromUtf8(line.mid(songMetadataNameKey.length()));
     } else if (line.startsWith(songMetadataAlbumIdKey)) {
-      songMetadataValues.albumId =
+      songMetadataValues->albumId =
           QString::fromUtf8(line.mid(songMetadataAlbumIdKey.length()));
     } else if (line.startsWith(songMetadataPerformerKey)) {
-      songMetadataValues.performer =
+      songMetadataValues->performer =
           QString::fromUtf8(line.mid(songMetadataPerformerKey.length()));
     } else if (line.startsWith(songMetadataCommentKey)) {
-      songMetadataValues.comment =
+      songMetadataValues->comment =
           QString::fromUtf8(line.mid(songMetadataCommentKey.length()));
     } else if (line.startsWith(songMetadataLastModifiedKey)) {
-      songMetadataValues.lastModified =
+      songMetadataValues->lastModified =
           QString::fromUtf8(line.mid(songMetadataLastModifiedKey.length()));
     } else if (line.startsWith(songMetadataPosKey)) {
-      songMetadataValues.pos =
+      songMetadataValues->pos =
           QString::fromUtf8(line.mid(songMetadataPosKey.length())).toUInt();
     }
   }
   lines.clear();
-  return songMetadataValues;
 }

@@ -22,13 +22,14 @@
 #include <QLabel>
 #include <QTimer>
 
+class Application;
 class QTimeLine;
 
-class SongMetadataLabel : public QLabel {
+class CurrentSongMetadataLabel : public QLabel {
   Q_OBJECT
  public:
-  SongMetadataLabel(QWidget *parent = nullptr);
-  ~SongMetadataLabel();
+  CurrentSongMetadataLabel(Application *app, QWidget *parent = nullptr);
+  ~CurrentSongMetadataLabel();
   void updateSongMetadata(const QString arg1, const QString arg2);
 
  public slots:
@@ -41,6 +42,7 @@ protected:
 
  private:
   void startAnimation();
+  Application *app_;
   QPair<QString, QString> songMetaData_;
   QTimeLine *showHideAnimation_;
 };
