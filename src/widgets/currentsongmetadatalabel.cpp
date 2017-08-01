@@ -62,7 +62,8 @@ void CurrentSongMetadataLabel::updateSongMetadataText(bool animate) {
 
 void CurrentSongMetadataLabel::setOpacity(int value) {
   QString style =
-      QString("SongMetadataLabel{color:rgba(200, 200, 200, %1)}").arg(value);
+      QString("CurrentSongMetadataLabel{color:rgba(200, 200, 200, %1)}")
+          .arg(value);
   setStyleSheet(style);
 }
 

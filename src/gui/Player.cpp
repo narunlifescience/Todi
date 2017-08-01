@@ -23,6 +23,7 @@
 #include <QBitmap>
 #include <QBuffer>
 #include <QLayout>
+#include <QListView>
 #include <QMouseEvent>
 #include <QPainter>
 #include <QSettings>
@@ -39,21 +40,26 @@
 #include <QMouseEvent>
 #include <QPalette>
 #include <QPixmapCache>
+#include <QScrollBar>
 #include <QStyle>
 #include <QStyleOptionSlider>
 #include <QTimer>
 #include <QToolTip>
 #include <QWheelEvent>
+#include <QStackedWidget>
 
 #include "../core/application.h"
 #include "AboutDialog.h"
 #include "MpdConnectionDialog.h"
 #include "globals.h"
+#include "systemtrayicon.h"
 #include "widgets/TrackSlider.h"
 #include "widgets/VolumePopup.h"
 #include "widgets/currentcoverartlabel.h"
 #include "widgets/currentsongmetadatalabel.h"
 
+#include "currentplaylistmodel.h"
+#include "currentplaylistview.h"
 #include "mpdclient.h"
 #include "mpddata.h"
 #include "playbackcontroller.h"
@@ -76,34 +82,36 @@ Player::Player(Application *app, QWidget *parent)
       currentArtLoader_(app_->currentArtLoader()),
       lastState(MPDPlaybackState::Inactive),
       lastSongId(-1),
+      lastPlaylist(0),
       fetchStatsFactor(0),
       nowPlayingFactor(0),
       draggingPositionSlider(false),
-      widget(new QWidget(this)),
-      close_pushButton(new QPushButton(this)),
-      expand_collapse_PushButton(new QPushButton(this)),
-      previous_pushButton(new QPushButton(this)),
-      play_pause_pushButton(new QPushButton(this)),
-      next_pushButton(new QPushButton(this)),
-      volume_pushButton(new QPushButton(this)),
-      search_pushButton(new QPushButton(this)),
-      playlist_pushButton(new QPushButton(this)),
-      track_slider(new TrackSlider(Qt::Horizontal, this)),
-      timer_label(new QLabel(this)),
-      currentCoverArt_label(new CurrentCoverArtLabel(app_, this)),
-      currentSongMetadata_label(new CurrentSongMetadataLabel(app_, this)),
-      volume_popup(new VolumePopup(this)),
+      mainWidget(new QWidget(this)),
+      // miniplayerWidget(new QWidget(this)),
+      close_pushButton(new QPushButton(mainWidget)),
+      expand_collapse_PushButton(new QPushButton(mainWidget)),
+      previous_pushButton(new QPushButton(mainWidget)),
+      play_pause_pushButton(new QPushButton(mainWidget)),
+      next_pushButton(new QPushButton(mainWidget)),
+      volume_pushButton(new QPushButton(mainWidget)),
+      search_pushButton(new QPushButton(mainWidget)),
+      playlist_pushButton(new QPushButton(mainWidget)),
+      track_slider(new TrackSlider(Qt::Horizontal, mainWidget)),
+      timer_label(new QLabel(mainWidget)),
+      currentCoverArt_label(new CurrentCoverArtLabel(app_, mainWidget)),
+      currentSongMetadata_label(new CurrentSongMetadataLabel(app_, mainWidget)),
+      volume_popup(new VolumePopup(mainWidget)),
+      stack_widget(new QStackedWidget(this)),
+      playlist_view(new CurrentPlaylistView(this)),
       resize_status(false),
+      trayIcon(nullptr),
       consumePingpong(true),
-      nonConsumeSlider(true),
-      systemTrayProgress(SystemTrayProgress::EighthOctave) {
+      nonConsumeSlider(true) {
   ui_->setupUi(this);
 
   IconLoader::init();
   IconLoader::lumen_ = IconLoader::isLight(Qt::black);
 
-  this->setFixedHeight(50);
-  widget->setFixedHeight(40);
   this->setAttribute(Qt::WA_TranslucentBackground, true);
   setWindowTitle(QApplication::applicationName());
   setWindowIcon(QIcon(":icons/todi.svg"));
@@ -152,8 +160,8 @@ Player::Player(Application *app, QWidget *parent)
   quitAction->setIcon(IconLoader::load("edit-close", IconLoader::LightDark));
 
   // Theme adjust acordingly
-  widget->setStyleSheet(
-      ".QWidget{border-radius: 3px; background-color: rgba(20, 20, 20, 200); "
+  mainWidget->setStyleSheet(
+      ".QWidget{border-radius: 3px; background-color: rgba(20, 20, 20, 225); "
       "border: 0px solid #5c5c5c;}");
   track_slider->setStyleSheet(
       ".TrackSlider::groove:horizontal { border: 0px solid #999999; height: "
@@ -177,9 +185,10 @@ Player::Player(Application *app, QWidget *parent)
   playlist_pushButton->setStyleSheet("QPushButton{border: none;}");
   timer_label->setStyleSheet("QLabel{color:rgba(200, 200, 200, 200)}");
 
+  this->resize(this->width(), 48);
   QGridLayout *baselayout = new QGridLayout(this);
   baselayout->setContentsMargins(5, 5, 5, 5);
-  baselayout->addWidget(widget);
+  baselayout->addWidget(mainWidget);
 
   QVBoxLayout *expandcollapsecloselayout = new QVBoxLayout;
   expandcollapsecloselayout->setContentsMargins(0, 3, 0, 3);
@@ -218,7 +227,7 @@ Player::Player(Application *app, QWidget *parent)
   // track_slider->hide();
   // timer_label->hide();
 
-  QHBoxLayout *hboxfinal = new QHBoxLayout(widget);
+  QHBoxLayout *hboxfinal = new QHBoxLayout();
   // hboxfinal->setContentsMargins(3, 3, 0, 3);
   hboxfinal->setContentsMargins(0, 0, 0, 0);
   hboxfinal->setSpacing(5);
@@ -231,25 +240,37 @@ Player::Player(Application *app, QWidget *parent)
   hboxfinal->addLayout(vboxplaypauseslidertimer, 3);
   // hboxfinal->addWidget(new QSizeGrip(widget), 0, Qt::AlignBottom |
   // Qt::AlignRight);
+  // miniplayerWidget->setLayout(hboxfinal);
+  // mainWidget->setFixedHeight(48);
 
-  widget->layout()->setSizeConstraint(QLayout::SetNoConstraint);
+  QVBoxLayout *vboxfinal = new QVBoxLayout(mainWidget);
+  vboxfinal->setContentsMargins(0, 0, 0, 0);
+  vboxfinal->setSpacing(0);
+  vboxfinal->addLayout(hboxfinal, 0);
+  vboxfinal->addWidget(stack_widget, 1);
+  stack_widget->addWidget(playlist_view);
+
+  mainWidget->layout()->setSizeConstraint(QLayout::SetNoConstraint);
   timer_label->setText("--:--");
 
-  currentCoverArt_label->setFixedWidth(widget->height());
-  currentCoverArt_label->setFixedHeight(widget->height());
+  currentCoverArt_label->setFixedWidth(48);
+  currentCoverArt_label->setFixedHeight(48);
 
   this->setMouseTracking(true);
 
-  widget->installEventFilter(widget);
+  mainWidget->installEventFilter(mainWidget);
+
+  currentPlaylistModel_ =
+      new CurrentPlaylistModel(dataAccess_->getPlaylistinfoValues());
+  playlist_view->setModel(currentPlaylistModel_);
+  // playlist_view->setHidden(true);
 
   // Set connection data
   QSettings settings;
+
   // Tray stuf
-  // if (setupTrayIcon() && settings.value("systemtray").toBool())
-  trayIcon = new QSystemTrayIcon(this);
-  trayIcon->setIcon(QIcon(":icons/todi.svg"));
-  trayIcon->setToolTip("Todi");
-  trayIcon->show();
+  setupTrayIcon();
+
   settings.beginGroup("mpd-server-connection");
   Todi::hostname = settings.value("host", "localhost").toString();
   Todi::port = static_cast<quint16>(settings.value("port", 6600).toUInt());
@@ -293,7 +314,7 @@ Player::Player(Application *app, QWidget *parent)
     std::unique_ptr<AboutDialog> abt(new AboutDialog());
     abt->exec();
   });
-  connect(trayIcon, &QSystemTrayIcon::activated, this,
+  connect(trayIcon, &SystemTrayIcon::activated, this,
           [&]() { (isHidden()) ? show() : hide(); });
   connect(expand_collapse_PushButton, &QPushButton::clicked, this,
           &Player::expandCollapse);
@@ -317,8 +338,9 @@ Player::Player(Application *app, QWidget *parent)
           &Player::setPosition);
   connect(track_slider, &TrackSlider::sliderReleased, this,
           &Player::positionSliderReleased);
-  connect(track_slider, &TrackSlider::valueChanged, this,
-          &Player::trayIconUpdateProgress);
+  connect(track_slider, &TrackSlider::valueChanged, [&](int value) {
+    trayIcon->trayIconUpdateProgress(value, track_slider->maximum());
+  });
   connect(track_slider, SIGNAL(seekBackward()), this, SLOT(seekBackward()));
   connect(track_slider, SIGNAL(seekForward()), this, SLOT(seekForward()));
   // connect(track_slider, &TrackSlider::seekBackward, this,
@@ -341,6 +363,14 @@ Player::Player(Application *app, QWidget *parent)
   // Cover art loading
   connect(dataAccess_.get(), &MPDdata::MPDSongMetadataUpdated,
           currentArtLoader_, &CurrentArtLoader::loadCoverArt);
+
+  // update current playlist model
+  connect(dataAccess_.get(), &MPDdata::MPDPlaylistinfoUpdated,
+          currentPlaylistModel_, &CurrentPlaylistModel::updateModel);
+  connect(playlist_view, &CurrentPlaylistView::doubleClicked,
+          currentPlaylistModel_, &CurrentPlaylistModel::doubleClicked);
+  connect(currentPlaylistModel_, &CurrentPlaylistModel::playSong,
+          [&](quint32 song) { playbackCtrlr_->play(song); });
 
   // update status & stats when starting the application
   dataAccess_->getMPDStatus();
@@ -412,12 +442,12 @@ void Player::mouseMoveEvent(QMouseEvent *event) {
 }
 
 void Player::resizeEvent(QResizeEvent *) {
-  if (widget->width() > 200) {
+  if (mainWidget->width() > 200) {
     currentCoverArt_label->show();
   } else {
     currentCoverArt_label->hide();
   }
-  if (widget->width() > 350) {
+  if (mainWidget->width() > 350) {
     search_pushButton->show();
     playlist_pushButton->show();
   } else {
@@ -438,15 +468,14 @@ int Player::showMpdConnectionDialog() {
 }
 
 void Player::expandCollapse() {
-  /*if (height() == 61) {
+  /*if (!playlist_view->isVisible()) {
     expand_collapse_PushButton->setIcon(
         IconLoader::load("edit-collapse", IconLoader::LightDark));
-    resize(width(), width());
+    playlist_view->setVisible(true);
   } else {
-      setFixedHeight(61);
     expand_collapse_PushButton->setIcon(
         IconLoader::load("edit-expand", IconLoader::LightDark));
-    //this->resize(this->width(), 61);
+    playlist_view->setVisible(false);
   }*/
 }
 
@@ -585,16 +614,11 @@ void Player::updateStatus() {
     }
   }*/
 
-  // Set TrayIcon tooltip
-  QString text;
-  text += "Todi: " + timeElapsedFormattedString;
-  if (trayIcon != nullptr) trayIcon->setToolTip(text);
-
   // Check if playlist has changed and update if needed
-  // if (lastState == MPDStatus::State::StateInactive ||
-  //    lastPlaylist < status->playlist()) {
-  //  mpd.playListInfo();
-  //}
+  if (lastState == MPDPlaybackState::Inactive ||
+      lastPlaylist < dataAccess_->playlist()) {
+    dataAccess_->getMPDPlaylistInfo();
+  }
 
   // Display bitrate
   bitrateLabel.setText("Bitrate: " + QString::number(dataAccess_->bitrate()));
@@ -602,7 +626,7 @@ void Player::updateStatus() {
   // Update status info
   lastState = dataAccess_->state();
   lastSongId = dataAccess_->songId();
-  // lastPlaylist = dataAccess_->playlist();
+  lastPlaylist = dataAccess_->playlist();
 }
 
 void Player::playPauseTrack() {
@@ -646,47 +670,6 @@ void Player::seekForward() {
 
 void Player::positionSliderReleased() { draggingPositionSlider = false; }
 
-void Player::trayIconUpdateProgress(int value) {
-  if (value != 0) {
-    SystemTrayProgress trayProgress = SystemTrayProgress::EighthOctave;
-    int percent = (value * 100) / track_slider->maximum();
-
-    (percent < 12)
-        ? trayProgress = SystemTrayProgress::FirstOctave
-        : (percent < 24)
-              ? trayProgress = SystemTrayProgress::SecondOctave
-              : (percent < 36)
-                    ? trayProgress = SystemTrayProgress::ThirdOctave
-                    : (percent < 48)
-                          ? trayProgress = SystemTrayProgress::FourthOctave
-                          : (percent < 60)
-                                ? trayProgress = SystemTrayProgress::FifthOctave
-                                : (percent < 72)
-                                      ? trayProgress =
-                                            SystemTrayProgress::SixthOctave
-                                      : (percent < 84)
-                                            ? trayProgress =
-                                                  SystemTrayProgress::
-                                                      SeventhOctave
-                                            : (percent < 96)
-                                                  ? trayProgress =
-                                                        SystemTrayProgress::
-                                                            EighthOctave
-                                                  : trayProgress =
-                                                        SystemTrayProgress::
-                                                            EighthOctave;
-
-    if (trayProgress != systemTrayProgress) {
-      setTrayIconProgress(trayProgress);
-    }
-
-  } else {
-    if (systemTrayProgress != SystemTrayProgress::EighthOctave) {
-      setTrayIconProgress(SystemTrayProgress::EighthOctave);
-    }
-  }
-}
-
 void Player::setVolume(quint8 value) { playbackOptionsCtrlr_->setvol(value); }
 
 void Player::showCurrentSongMetadata() {
@@ -724,70 +707,6 @@ void Player::showCurrentSongMetadata() {
 
   mBox.setText(metadata);
   mBox.exec();
-}
-
-void Player::setTrayIconProgress(Player::SystemTrayProgress trayProgress) {
-  QPixmap traypix;
-  switch (trayProgress) {
-    case SystemTrayProgress::FirstOctave:
-
-      if (!QPixmapCache::find("onebyeight", &traypix)) {
-        traypix.load(":/icons/tray/onebyeight.svg");
-        QPixmapCache::insert("onebyeight", traypix);
-      }
-      trayIcon->setIcon(traypix);
-      break;
-    case SystemTrayProgress::SecondOctave:
-      if (!QPixmapCache::find("twobyeight", &traypix)) {
-        traypix.load(":/icons/tray/twobyeight.svg");
-        QPixmapCache::insert("twobyeight", traypix);
-      }
-      trayIcon->setIcon(traypix);
-      break;
-    case SystemTrayProgress::ThirdOctave:
-      if (!QPixmapCache::find("threebyeight", &traypix)) {
-        traypix.load(":/icons/tray/threebyeight.svg");
-        QPixmapCache::insert("threebyeight", traypix);
-      }
-      trayIcon->setIcon(traypix);
-      break;
-    case SystemTrayProgress::FourthOctave:
-      if (!QPixmapCache::find("fourbyeight", &traypix)) {
-        traypix.load(":/icons/tray/fourbyeight.svg");
-        QPixmapCache::insert("fourbyeight", traypix);
-      }
-      trayIcon->setIcon(traypix);
-      break;
-    case SystemTrayProgress::FifthOctave:
-      if (!QPixmapCache::find("fivebyeight", &traypix)) {
-        traypix.load(":/icons/tray/fivebyeight.svg");
-        QPixmapCache::insert("fivebyeight", traypix);
-      }
-      trayIcon->setIcon(traypix);
-      break;
-    case SystemTrayProgress::SixthOctave:
-      if (!QPixmapCache::find("sixbyeight", &traypix)) {
-        traypix.load(":/icons/tray/sixbyeight.svg");
-        QPixmapCache::insert("sixbyeight", traypix);
-      }
-      trayIcon->setIcon(traypix);
-      break;
-    case SystemTrayProgress::SeventhOctave:
-      if (!QPixmapCache::find("sevenbyeight", &traypix)) {
-        traypix.load(":/icons/tray/sevenbyeight.svg");
-        QPixmapCache::insert("sevenbyeight", traypix);
-      }
-      trayIcon->setIcon(traypix);
-      break;
-    case SystemTrayProgress::EighthOctave:
-      if (!QPixmapCache::find("eightbyeight", &traypix)) {
-        traypix.load(":/icons/tray/eightbyeight.svg");
-        QPixmapCache::insert("eightbyeight", traypix);
-      }
-      trayIcon->setIcon(traypix);
-      break;
-  }
-  systemTrayProgress = trayProgress;
 }
 
 void Player::doConsumePingpong() {
@@ -839,48 +758,12 @@ bool Player::setupTrayIcon() {
     return false;
   }
 
-  trayIcon = new QSystemTrayIcon(this);
-  // trayIcon->installEventFilter(volumeSliderEventHandler);
-  trayIconMenu = new QMenu(this);
+  if (!trayIcon) {
+    trayIcon = new SystemTrayIcon(this);
+  } else {
+    return trayIcon;
+  }
 
-  // Setup Actions
-  playPauseAction = new QAction(tr("&Play"), trayIconMenu);
-  playPauseAction->setIcon(
-      IconLoader::load("media-playback-play", IconLoader::LightDark));
-  connect(playPauseAction, SIGNAL(triggered()), this, SLOT(playPauseTrack()));
-
-  stopAction = new QAction(tr("&Stop"), trayIconMenu);
-  stopAction->setIcon(
-      IconLoader::load("media-playback-stop", IconLoader::LightDark));
-  connect(stopAction, SIGNAL(triggered()), this, SLOT(stopTrack()));
-
-  prevAction = new QAction(tr("P&rev"), trayIconMenu);
-  prevAction->setIcon(
-      IconLoader::load("media-skip-backward", IconLoader::LightDark));
-  connect(prevAction, SIGNAL(triggered()), this, SLOT(previousTrack()));
-
-  nextAction = new QAction(tr("&Next"), trayIconMenu);
-  nextAction->setIcon(
-      IconLoader::load("media-skip-forward", IconLoader::LightDark));
-  connect(nextAction, SIGNAL(triggered()), this, SLOT(nextTrack()));
-
-  quitAction = new QAction(tr("&Quit"), trayIconMenu);
-  connect(quitAction, SIGNAL(triggered()), qApp, SLOT(quit()));
-
-  connect(trayIcon, SIGNAL(activated(QSystemTrayIcon::ActivationReason)), this,
-          SLOT(trayIconClicked(QSystemTrayIcon::ActivationReason)));
-
-  // Setup Menu
-  trayIconMenu->addAction(prevAction);
-  trayIconMenu->addAction(nextAction);
-  trayIconMenu->addAction(stopAction);
-  trayIconMenu->addAction(playPauseAction);
-  trayIconMenu->addSeparator();
-  trayIconMenu->addAction(quitAction);
-
-  // trayIcon->setContextMenu(trayIconMenu);
-  trayIcon->setIcon(QIcon(":icons/todi.svg"));
-  trayIcon->setToolTip("Todi");
-
+  trayIcon->show();
   return true;
 }

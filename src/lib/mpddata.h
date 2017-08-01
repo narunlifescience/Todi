@@ -33,6 +33,7 @@ class MPDdata : public QObject {
   void getMPDStatus();
   void getMPDStats();
   void getMPDSongMetadata();
+  void getMPDPlaylistInfo();
 
   // MPD status
   qint8 volume() const;
@@ -89,19 +90,24 @@ class MPDdata : public QObject {
   uint pos() const;
   MPDSongMetadata *getSongMetadataValues() const;
 
+  QList<MPDSongMetadata *> *getPlaylistinfoValues() const;
+
  signals:
   void MPDStatusUpdated();
   void MPDStatsUpdated();
   void MPDSongMetadataUpdated(QString filename);
+  void MPDPlaylistinfoUpdated(QList<MPDSongMetadata *> *playlistQueue);
 
  private:
   std::shared_ptr<MPDSocket> mpdSocket_;
   MPDStatusValues *statusValues_;
   MPDStatsValues *statsValues_;
   MPDSongMetadata *songMetadataValues_;
+  QList<MPDSongMetadata *> *playlistQueue_;
   static const QByteArray statusCommand;
   static const QByteArray statsCommand;
   static const QByteArray songMetadataCommand;
+  const static QByteArray playlistinfoCommand;
 };
 
 #endif  // STATUS_H

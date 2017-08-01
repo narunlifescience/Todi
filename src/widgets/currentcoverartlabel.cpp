@@ -63,7 +63,7 @@ void CurrentCoverArtLabel::setCoverArtTooltip() {
 
 void CurrentCoverArtLabel::updateCoverArt() {
   if (image_->isNull()) {
-    setPixmap(QPixmap(":/icons/nocover.svg"));
+    setPixmap(QPixmap(":/icons/nocover.png"));
     return;
   }
 

@@ -23,13 +23,15 @@
 const QByteArray MPDdata::statusCommand = "status";
 const QByteArray MPDdata::statsCommand = "stats";
 const QByteArray MPDdata::songMetadataCommand = "currentsong";
+const QByteArray MPDdata::playlistinfoCommand = "playlistinfo";
 
 MPDdata::MPDdata(QObject* parent, std::shared_ptr<MPDSocket> mpdSocket)
     : QObject(parent),
       mpdSocket_(mpdSocket),
       statusValues_(new MPDStatusValues),
       statsValues_(new MPDStatsValues),
-      songMetadataValues_(new MPDSongMetadata) {}
+      songMetadataValues_(new MPDSongMetadata),
+      playlistQueue_(new QList<MPDSongMetadata*>()) {}
 
 MPDdata::~MPDdata() {
   delete statusValues_;
@@ -57,9 +59,20 @@ void MPDdata::getMPDSongMetadata() {
   QPair<QByteArray, bool> mpdSongMetadata(
       mpdSocket_->sendCommand(songMetadataCommand));
   if (mpdSongMetadata.second) {
-    MPDdataParser::parseSongMetadata(mpdSongMetadata.first,
+    MPDdataParser::parseSongMetadata(mpdSongMetadata.first.split('\n'),
                                      songMetadataValues_);
     emit MPDSongMetadataUpdated(songMetadataValues_->file);
+  }
+}
+
+void MPDdata::getMPDPlaylistInfo() {
+  qDeleteAll(playlistQueue_->begin(), playlistQueue_->end());
+  playlistQueue_->clear();
+  QPair<QByteArray, bool> mpdplaylistinfo(
+      mpdSocket_->sendCommand(playlistinfoCommand));
+  if (mpdplaylistinfo.second) {
+    MPDdataParser::parsePlaylistQueue(mpdplaylistinfo.first, playlistQueue_);
+    emit MPDPlaylistinfoUpdated(playlistQueue_);
   }
 }
 
@@ -170,4 +183,8 @@ uint MPDdata::pos() const { return songMetadataValues_->pos; }
 
 MPDSongMetadata* MPDdata::getSongMetadataValues() const {
   return songMetadataValues_;
+}
+
+QList<MPDSongMetadata*>* MPDdata::getPlaylistinfoValues() const {
+  return playlistQueue_;
 }

@@ -50,6 +50,7 @@ static const QByteArray songMetadataLastModifiedKey("Last-Modified: ");
 static const QByteArray songMetadataPosKey("Pos: ");
 
 // MPD look up values
+static const QByteArray okValue("OK");
 static const QByteArray enabledValue("1");
 static const QByteArray PlayValue("play");
 static const QByteArray StopValue("stop");
@@ -150,10 +151,9 @@ void MPDdataParser::parseStats(const QByteArray &data,
   lines.clear();
 }
 
-void MPDdataParser::parseSongMetadata(const QByteArray &data,
+void MPDdataParser::parseSongMetadata(const QList<QByteArray> &data,
                                       MPDSongMetadata *songMetadataValues) {
-  QList<QByteArray> lines = data.split('\n');
-  foreach (const QByteArray &line, lines) {
+  foreach (const QByteArray &line, data) {
     if (line.startsWith(songMetadataFileKey)) {
       songMetadataValues->file =
           QString::fromUtf8(line.mid(songMetadataFileKey.length()));
@@ -209,5 +209,22 @@ void MPDdataParser::parseSongMetadata(const QByteArray &data,
           QString::fromUtf8(line.mid(songMetadataPosKey.length())).toUInt();
     }
   }
-  lines.clear();
+}
+
+void MPDdataParser::parsePlaylistQueue(
+    const QByteArray &data, QList<MPDSongMetadata *> *playlistQueue) {
+  QList<QByteArray> songblock;
+  QList<QByteArray> lines = data.split('\n');
+  foreach (const QByteArray &line, lines) {
+    if (line == okValue) continue;
+
+    if (line.startsWith(songMetadataFileKey)) {
+      MPDSongMetadata *songmetadata = new MPDSongMetadata();
+      parseSongMetadata(songblock, songmetadata);
+      playlistQueue->append(songmetadata);
+      songblock.clear();
+    }
+
+    if (!line.isEmpty()) songblock.append(line);
+  }
 }

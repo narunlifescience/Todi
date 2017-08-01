@@ -18,15 +18,15 @@
  * along with QtMPC.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <QHeaderView>
+/*#include <QHeaderView>
 #include <QIcon>
 #include <QKeyEvent>
 #include <QPixmap>
 #include <QString>
 
-#include "Player.h"
+#include "Player.h"*/
 
-void Player::trayIconClicked(QSystemTrayIcon::ActivationReason reason) {
+/*void Player::trayIconClicked(QSystemTrayIcon::ActivationReason reason) {
   switch (reason) {
     case QSystemTrayIcon::Unknown:
     case QSystemTrayIcon::Context:
@@ -42,4 +42,4 @@ void Player::trayIconClicked(QSystemTrayIcon::ActivationReason reason) {
     case QSystemTrayIcon::MiddleClick:
       break;
     }
-}
+}*/

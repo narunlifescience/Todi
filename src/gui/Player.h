@@ -23,7 +23,6 @@
 #include <QObject>
 #include <QPushButton>
 #include <QSlider>
-#include <QSystemTrayIcon>
 #include <QTimer>
 #include <QVector>
 #include <QWidget>
@@ -34,8 +33,10 @@
 class Ui_Player;
 class QHBoxLayout;
 class QGridLayout;
+class QStackedWidget;
 
 class Application;
+class SystemTrayIcon;
 class MPDClient;
 class MPDdata;
 class PlaybackController;
@@ -45,6 +46,8 @@ class VolumePopup;
 class CurrentArtLoader;
 class CurrentSongMetadataLabel;
 class CurrentCoverArtLabel;
+class CurrentPlaylistModel;
+class CurrentPlaylistView;
 
 class Player : public QWidget {
   Q_OBJECT
@@ -75,6 +78,7 @@ class Player : public QWidget {
 
   MPDPlaybackState lastState;
   qint32 lastSongId;
+  quint32 lastPlaylist;
 
   int fetchStatsFactor;
   int nowPlayingFactor;
@@ -83,7 +87,8 @@ class Player : public QWidget {
   bool draggingPositionSlider;
   QLabel bitrateLabel;
 
-  QWidget *widget;
+  QWidget *mainWidget;
+  //QWidget *miniplayerWidget;
   QPushButton *close_pushButton;
   QPushButton *expand_collapse_PushButton;
   QPushButton *previous_pushButton;
@@ -97,8 +102,11 @@ class Player : public QWidget {
   CurrentCoverArtLabel *currentCoverArt_label;
   CurrentSongMetadataLabel *currentSongMetadata_label;
   VolumePopup *volume_popup;
+  QStackedWidget *stack_widget;
+  CurrentPlaylistView *playlist_view;
+  CurrentPlaylistModel *currentPlaylistModel_;
   bool resize_status;
-  QSystemTrayIcon *trayIcon;
+  SystemTrayIcon *trayIcon;
   QMenu *trayIconMenu;
   QAction *playPauseAction;
   QAction *stopAction;
@@ -113,21 +121,8 @@ class Player : public QWidget {
 
   static const int constBlurRadius_;
 
-  enum class SystemTrayProgress {
-    FirstOctave,
-    SecondOctave,
-    ThirdOctave,
-    FourthOctave,
-    FifthOctave,
-    SixthOctave,
-    SeventhOctave,
-    EighthOctave,
-  };
-  SystemTrayProgress systemTrayProgress;
-
   int showMpdConnectionDialog();
   bool setupTrayIcon();
-  void setTrayIconProgress(SystemTrayProgress trayProgress);
   void doConsumePingpong();
   void restoreTrackSliderHandle();
   void setTrackSliderHandleToConsume();
@@ -144,8 +139,6 @@ class Player : public QWidget {
   void seekBackward();
   void seekForward();
   void positionSliderReleased();
-  void trayIconClicked(QSystemTrayIcon::ActivationReason reason);
-  void trayIconUpdateProgress(int value);
   void setVolume(quint8 value);
   void showCurrentSongMetadata();
 

@@ -33,7 +33,11 @@ HEADERS += core/application.h \
            lib/playbackoptionscontroller.h \
            tagger/currentartloader.h \
            widgets/currentsongmetadatalabel.h \
-           widgets/currentcoverartlabel.h
+           widgets/currentcoverartlabel.h \
+           lib/currentplaylistcontroller.h \
+           gui/currentplaylistmodel.h \
+           gui/currentplaylistview.h \
+           gui/systemtrayicon.h
 
 FORMS +=   gui/AboutDialog.ui \
            gui/MpdConnectionDialog.ui \
@@ -44,7 +48,6 @@ SOURCES += main.cpp \
            gui/AboutDialog.cpp \
            gui/Player.cpp \
            gui/IconLoader.cpp \
-           gui/Trayicon.cpp \
            gui/MpdConnectionDialog.cpp \
            gui/globals.cpp \
            widgets/TrackSlider.cpp \
@@ -58,4 +61,8 @@ SOURCES += main.cpp \
            lib/playbackoptionscontroller.cpp \
            tagger/currentartloader.cpp \
            widgets/currentcoverartlabel.cpp \
-           widgets/currentsongmetadatalabel.cpp
+           widgets/currentsongmetadatalabel.cpp \
+           lib/currentplaylistcontroller.cpp \
+           gui/currentplaylistmodel.cpp \
+           gui/currentplaylistview.cpp \
+           gui/systemtrayicon.cpp
