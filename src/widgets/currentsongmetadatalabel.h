@@ -24,6 +24,7 @@
 
 class Application;
 class QTimeLine;
+class QLine;
 
 class CurrentSongMetadataLabel : public QLabel {
   Q_OBJECT
@@ -36,12 +37,13 @@ class CurrentSongMetadataLabel : public QLabel {
   void updateSongMetadataText(bool animate = true);
   void setOpacity(int value);
 
-protected:
+ protected:
   void showEvent(QShowEvent *);
   void hideEvent(QHideEvent *);
 
  private:
-  void startAnimation();
+  void startAnimation() const;
+
   Application *app_;
   QPair<QString, QString> songMetaData_;
   QTimeLine *showHideAnimation_;

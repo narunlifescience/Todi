@@ -3,22 +3,33 @@
 #include <QMouseEvent>
 #include <QPainter>
 #include <QToolTip>
+#include <QVBoxLayout>
 
 #include "../core/application.h"
 #include "../lib/mpdclient.h"
 #include "../lib/mpddata.h"
 #include "../tagger/currentartloader.h"
+//#include "../tooltip/tooltip.h"
 #include "currentcoverartlabel.h"
 
 CurrentCoverArtLabel::CurrentCoverArtLabel(Application *app, QWidget *parent)
     : QLabel(parent),
       app_(app),
-      image_(new QImage()),
+      image_(nullptr),
       imageByteArray_(new QByteArray()),
       imageBuffer_(new QBuffer(this)),
-      mousepressed_(false) {
+      mousepressed_(false),
+      tipwidget_(new QWidget()),
+      tipwidgetLayout_(new QVBoxLayout(tipwidget_)),
+      texttipLabel_(new QLabel(tipwidget_)),
+      pixmaptipLabel_(new QLabel(tipwidget_)) {
   setScaledContents(true);
   setMouseTracking(true);
+
+  tipwidgetLayout_->addWidget(texttipLabel_);
+  tipwidgetLayout_->addWidget(pixmaptipLabel_);
+  tipwidgetLayout_->setContentsMargins(1, 1, 1, 1);
+
   connect(
       app_->currentArtLoader(), &CurrentArtLoader::coverArtProcessed,
       [&](QImage *image) {
@@ -26,6 +37,11 @@ CurrentCoverArtLabel::CurrentCoverArtLabel(Application *app, QWidget *parent)
             image,
             app_->mpdClient()->getSharedMPDdataPtr()->getSongMetadataValues());
       });
+}
+
+CurrentCoverArtLabel::~CurrentCoverArtLabel() {
+  delete tipwidget_;
+  tipwidget_ = nullptr;
 }
 
 void CurrentCoverArtLabel::setCoverArt(QImage *image,
@@ -56,7 +72,6 @@ void CurrentCoverArtLabel::setCoverArtTooltip() {
             .arg(QString::number(songmetadata_->date));
     tooltiptext_ += "</table>";
   }
-
   tooltiptext_ += QString("<br/><img src=\"data:image/png;base64, %0\"/>")
                       .arg(QString(imageByteArray_->toBase64()));
 }
@@ -69,6 +84,7 @@ void CurrentCoverArtLabel::updateCoverArt() {
 
   // Display image
   QPixmap pixmap = QPixmap::fromImage(*image_);
+  pixmaptipLabel_->setPixmap(pixmap);
   pixmap = pixmap.scaled(size(), Qt::KeepAspectRatio, Qt::SmoothTransformation);
   QPainter painter(&pixmap);
   QPen pen(QColor(242, 242, 242), 2);
@@ -81,6 +97,8 @@ void CurrentCoverArtLabel::updateCoverArt() {
 void CurrentCoverArtLabel::mouseMoveEvent(QMouseEvent *event) {
   if (!mousepressed_) {
     QToolTip::showText(event->globalPos(), tooltiptext_, this, rect());
+    // Utils::ToolTip::show(event->globalPos(), tooltiptext_, this, "tooltip",
+    //                     rect());
   }
   QWidget::mouseMoveEvent(event);
 }

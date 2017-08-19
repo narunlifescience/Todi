@@ -153,6 +153,7 @@ void MPDdataParser::parseStats(const QByteArray &data,
 
 void MPDdataParser::parseSongMetadata(const QList<QByteArray> &data,
                                       MPDSongMetadata *songMetadataValues) {
+
   foreach (const QByteArray &line, data) {
     if (line.startsWith(songMetadataFileKey)) {
       songMetadataValues->file =
@@ -213,6 +214,7 @@ void MPDdataParser::parseSongMetadata(const QList<QByteArray> &data,
 
 void MPDdataParser::parsePlaylistQueue(
     const QByteArray &data, QList<MPDSongMetadata *> *playlistQueue) {
+
   QList<QByteArray> songblock;
   QList<QByteArray> lines = data.split('\n');
   foreach (const QByteArray &line, lines) {

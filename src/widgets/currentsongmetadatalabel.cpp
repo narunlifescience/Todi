@@ -17,6 +17,7 @@
 */
 
 #include <QDebug>
+#include <QPainter>
 #include <QTimeLine>
 
 #include "../core/application.h"
@@ -29,7 +30,9 @@ CurrentSongMetadataLabel::CurrentSongMetadataLabel(Application *app,
                                                    QWidget *parent)
     : QLabel(parent), app_(app), showHideAnimation_(new QTimeLine(500, this)) {
   setText("Todi");
+  // opacity setting range
   showHideAnimation_->setFrameRange(0, 255);
+
   connect(showHideAnimation_, &QTimeLine::frameChanged, this,
           &CurrentSongMetadataLabel::setOpacity);
   connect(
@@ -73,7 +76,7 @@ void CurrentSongMetadataLabel::hideEvent(QHideEvent *) {
   showHideAnimation_->stop();
 }
 
-void CurrentSongMetadataLabel::startAnimation() {
+void CurrentSongMetadataLabel::startAnimation() const {
   if (isVisible()) {
     showHideAnimation_->setDirection(QTimeLine::Forward);
     showHideAnimation_->start();

@@ -47,7 +47,7 @@ class CurrentArtLoader;
 class CurrentSongMetadataLabel;
 class CurrentCoverArtLabel;
 class CurrentPlaylistModel;
-class CurrentPlaylistView;
+class QListView;
 
 class Player : public QWidget {
   Q_OBJECT
@@ -64,6 +64,7 @@ class Player : public QWidget {
   void leaveEvent(QEvent *);
   void enterEvent(QEvent *);
   void resizeEvent(QResizeEvent *);
+  bool eventFilter(QObject *target, QEvent *event);
 
  private:
   Ui_Player *ui_;
@@ -88,7 +89,6 @@ class Player : public QWidget {
   QLabel bitrateLabel;
 
   QWidget *mainWidget;
-  //QWidget *miniplayerWidget;
   QPushButton *close_pushButton;
   QPushButton *expand_collapse_PushButton;
   QPushButton *previous_pushButton;
@@ -103,7 +103,7 @@ class Player : public QWidget {
   CurrentSongMetadataLabel *currentSongMetadata_label;
   VolumePopup *volume_popup;
   QStackedWidget *stack_widget;
-  CurrentPlaylistView *playlist_view;
+  QListView *playlist_view;
   CurrentPlaylistModel *currentPlaylistModel_;
   bool resize_status;
   SystemTrayIcon *trayIcon;
@@ -118,6 +118,9 @@ class Player : public QWidget {
   QAction *aboutAction;
   bool consumePingpong;
   bool nonConsumeSlider;
+  bool show_metadata_on_mouse_leave_;
+  int collapsedHeight_;
+  int fullHeight_;
 
   static const int constBlurRadius_;
 
@@ -132,14 +135,14 @@ class Player : public QWidget {
   void showVolumeSlider();
   void updateStats();
   void updateStatus();
-  void playPauseTrack();
-  void stopTrack();
+  void playPauseTrack() const;
+  void stopTrack() const;
   void positionSliderPressed();
-  void setPosition();
-  void seekBackward();
-  void seekForward();
+  void setPosition() const;
+  void seekBackward() const;
+  void seekForward() const;
   void positionSliderReleased();
-  void setVolume(quint8 value);
+  void setVolume(const quint8 value) const;
   void showCurrentSongMetadata();
 
  signals:

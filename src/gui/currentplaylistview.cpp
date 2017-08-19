@@ -1,8 +1,6 @@
 #include "currentplaylistview.h"
-#include <QDebug>
-#include <QHeaderView>
+
 #include <QPainter>
-#include <QScrollBar>
 
 CurrentPlaylistViewDeligate::CurrentPlaylistViewDeligate(QObject *parent)
     : QStyledItemDelegate(parent) {}
@@ -96,57 +94,10 @@ void CurrentPlaylistViewDeligate::paint(QPainter *painter,
 QSize CurrentPlaylistViewDeligate::sizeHint(const QStyleOptionViewItem &option,
                                             const QModelIndex &index) const {
   // first row is always header
+  Q_UNUSED(option)
   if (index.row() == 0) {
     return QSize(0, 0);
   } else {
     return QSize(20, 60);
   }
-}
-
-CurrentPlaylistView::CurrentPlaylistView(QWidget *parent) : QListView(parent) {
-  setItemDelegate(new CurrentPlaylistViewDeligate());
-  setWrapping(false);
-  setLayoutMode(QListView::Batched);
-  setBatchSize(500);
-  setFlow(QListView::TopToBottom);
-  setSelectionRectVisible(true);
-  // setUniformItemSizes(true);
-  // setVerticalScrollMode(QAbstractItemView::ScrollPerPixel);
-  customStylesheet();
-}
-
-void CurrentPlaylistView::customStylesheet() {
-  setStyleSheet(
-      "CurrentPlaylistView {background:rgba(80, 80, 80, 100); border-radius: "
-      "3px;}");
-  // playlist_view->setStyleSheet("QListView {border-radius: 3px;}");
-  this->verticalScrollBar()->setStyleSheet(
-      "QScrollBar:vertical {"
-      "    border: 0px;"
-      "border-radius: 3px;"
-      "    background:rgba(200, 200, 200, 100);"
-      "    width:6px;    "
-      "    margin: 0px 0px 0px 0px;"
-      "}"
-      "QScrollBar::handle:vertical {"
-      "border-radius: 3px;"
-      "    background: rgb(245, 245, 245, 200);"
-      "    min-height: 20px;"
-      "}"
-      "QScrollBar::add-line:vertical {"
-      "    background: qlineargradient(x1:0, y1:0, x2:1, y2:0,"
-      "    stop: 0 rgb(32, 47, 130), stop: 0.5 rgb(245, 245, 245),  stop:1 "
-      "rgb(32, 47, 130));"
-      "    height: 0px;"
-      "    subcontrol-position: bottom;"
-      "    subcontrol-origin: margin;"
-      "}"
-      "QScrollBar::sub-line:vertical {"
-      "    background: qlineargradient(x1:0, y1:0, x2:1, y2:0,"
-      "    stop: 0  rgb(32, 47, 130), stop: 0.5 rgb(32, 47, 130),  stop:1 "
-      "rgb(32, 47, 130));"
-      "    height: 0 px;"
-      "    subcontrol-position: top;"
-      "    subcontrol-origin: margin;"
-      "}");
 }

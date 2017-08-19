@@ -17,6 +17,7 @@
 */
 
 #include "VolumePopup.h"
+
 #include <QGraphicsDropShadowEffect>
 #include <QHBoxLayout>
 #include <QPainter>

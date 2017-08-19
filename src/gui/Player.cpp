@@ -41,12 +41,12 @@
 #include <QPalette>
 #include <QPixmapCache>
 #include <QScrollBar>
+#include <QStackedWidget>
 #include <QStyle>
 #include <QStyleOptionSlider>
 #include <QTimer>
 #include <QToolTip>
 #include <QWheelEvent>
-#include <QStackedWidget>
 
 #include "../core/application.h"
 #include "AboutDialog.h"
@@ -87,7 +87,6 @@ Player::Player(Application *app, QWidget *parent)
       nowPlayingFactor(0),
       draggingPositionSlider(false),
       mainWidget(new QWidget(this)),
-      // miniplayerWidget(new QWidget(this)),
       close_pushButton(new QPushButton(mainWidget)),
       expand_collapse_PushButton(new QPushButton(mainWidget)),
       previous_pushButton(new QPushButton(mainWidget)),
@@ -102,11 +101,14 @@ Player::Player(Application *app, QWidget *parent)
       currentSongMetadata_label(new CurrentSongMetadataLabel(app_, mainWidget)),
       volume_popup(new VolumePopup(mainWidget)),
       stack_widget(new QStackedWidget(this)),
-      playlist_view(new CurrentPlaylistView(this)),
+      playlist_view(new QListView(this)),
       resize_status(false),
       trayIcon(nullptr),
       consumePingpong(true),
-      nonConsumeSlider(true) {
+      nonConsumeSlider(true),
+      show_metadata_on_mouse_leave_(false),
+      collapsedHeight_(0),
+      fullHeight_(0) {
   ui_->setupUi(this);
 
   IconLoader::init();
@@ -129,7 +131,7 @@ Player::Player(Application *app, QWidget *parent)
   close_pushButton->setIcon(
       IconLoader::load("edit-close", IconLoader::LightDark));
   expand_collapse_PushButton->setIcon(
-      IconLoader::load("edit-expand", IconLoader::LightDark));
+      IconLoader::load("edit-collapse", IconLoader::LightDark));
   previous_pushButton->setIcon(
       IconLoader::load("media-skip-backward", IconLoader::LightDark));
   play_pause_pushButton->setIcon(
@@ -184,8 +186,47 @@ Player::Player(Application *app, QWidget *parent)
   search_pushButton->setStyleSheet("QPushButton{border: none;}");
   playlist_pushButton->setStyleSheet("QPushButton{border: none;}");
   timer_label->setStyleSheet("QLabel{color:rgba(200, 200, 200, 200)}");
+  playlist_view->setStyleSheet(
+      "QListView {background:rgba(80, 80, 80, 100); border-radius: "
+      "3px;}");
+  // playlist_view->setStyleSheet("QListView {border-radius: 3px;}");
+  playlist_view->verticalScrollBar()->setStyleSheet(
+      "QScrollBar:vertical {"
+      "    border: 0px;"
+      "border-radius: 3px;"
+      "    background:rgba(200, 200, 200, 100);"
+      "    width:6px;    "
+      "    margin: 0px 0px 0px 0px;"
+      "}"
+      "QScrollBar::handle:vertical {"
+      "border-radius: 3px;"
+      "    background: rgb(245, 245, 245, 200);"
+      "    min-height: 20px;"
+      "}"
+      "QScrollBar::add-line:vertical {"
+      "    background: qlineargradient(x1:0, y1:0, x2:1, y2:0,"
+      "    stop: 0 rgb(32, 47, 130), stop: 0.5 rgb(245, 245, 245),  stop:1 "
+      "rgb(32, 47, 130));"
+      "    height: 0px;"
+      "    subcontrol-position: bottom;"
+      "    subcontrol-origin: margin;"
+      "}"
+      "QScrollBar::sub-line:vertical {"
+      "    background: qlineargradient(x1:0, y1:0, x2:1, y2:0,"
+      "    stop: 0  rgb(32, 47, 130), stop: 0.5 rgb(32, 47, 130),  stop:1 "
+      "rgb(32, 47, 130));"
+      "    height: 0 px;"
+      "    subcontrol-position: top;"
+      "    subcontrol-origin: margin;"
+      "}");
 
-  this->resize(this->width(), 48);
+  playlist_view->setItemDelegate(new CurrentPlaylistViewDeligate());
+  playlist_view->setWrapping(false);
+  playlist_view->setLayoutMode(QListView::Batched);
+  playlist_view->setBatchSize(500);
+  playlist_view->setFlow(QListView::TopToBottom);
+  playlist_view->setSelectionRectVisible(true);
+
   QGridLayout *baselayout = new QGridLayout(this);
   baselayout->setContentsMargins(5, 5, 5, 5);
   baselayout->addWidget(mainWidget);
@@ -220,19 +261,13 @@ Player::Player(Application *app, QWidget *parent)
   vboxplaypauseslidertimer->addLayout(layout);
   vboxplaypauseslidertimer->addLayout(slidertimerlayout);
 
-  // previous_pushButton->hide();
-  // play_pause_pushButton->hide();
-  // next_pushButton->hide();
-  // volume_pushButton->hide();
-  // track_slider->hide();
-  // timer_label->hide();
-
   QHBoxLayout *hboxfinal = new QHBoxLayout();
   // hboxfinal->setContentsMargins(3, 3, 0, 3);
   hboxfinal->setContentsMargins(0, 0, 0, 0);
   hboxfinal->setSpacing(5);
   // hboxfinal->addWidget(new QSizeGrip(widget), 0, Qt::AlignBottom |
   // Qt::AlignLeft);
+
   currentSongMetadata_label->hide();
   hboxfinal->addLayout(expandcollapsecloselayout, 0);
   hboxfinal->addWidget(currentCoverArt_label, 1);
@@ -256,14 +291,18 @@ Player::Player(Application *app, QWidget *parent)
   currentCoverArt_label->setFixedWidth(48);
   currentCoverArt_label->setFixedHeight(48);
 
-  this->setMouseTracking(true);
-
-  mainWidget->installEventFilter(mainWidget);
-
   currentPlaylistModel_ =
       new CurrentPlaylistModel(dataAccess_->getPlaylistinfoValues());
   playlist_view->setModel(currentPlaylistModel_);
-  // playlist_view->setHidden(true);
+
+  this->setMouseTracking(true);
+
+  mainWidget->installEventFilter(this);
+  mainWidget->setMouseTracking(true);
+  timer_label->installEventFilter(this);
+  timer_label->setMouseTracking(true);
+  playlist_view->viewport()->installEventFilter(this);
+  playlist_view->viewport()->setMouseTracking(true);
 
   // Set connection data
   QSettings settings;
@@ -292,6 +331,37 @@ Player::Player(Application *app, QWidget *parent)
   restoreGeometry(settings.value("geometry").toByteArray());
   settings.endGroup();
 
+  auto quitApplication = [=]() {
+    QSettings settings;
+    settings.beginGroup("player");
+    settings.setValue("geometry", saveGeometry());
+    settings.endGroup();
+    QApplication::quit();
+  };
+
+  auto aboutApplication = []() {
+    std::unique_ptr<AboutDialog> abt(new AboutDialog());
+    abt->exec();
+  };
+
+  auto showMetadataSlingshot = [=]() {
+    if (!volume_popup->isVisible()) {
+      previous_pushButton->hide();
+      play_pause_pushButton->hide();
+      next_pushButton->hide();
+      volume_pushButton->hide();
+      track_slider->hide();
+      timer_label->hide();
+      // these two lines solve First time player resize showing
+      // currentSongMetadata_label(need to fix)
+      currentSongMetadata_label->setFixedWidth(track_slider->width() +
+                                               timer_label->width());
+      currentSongMetadata_label->updateSongMetadataText(false);
+      currentSongMetadata_label->show();
+      show_metadata_on_mouse_leave_ = true;
+    }
+  };
+
   // MPD
   connect(dataAccess_.get(), &MPDdata::MPDStatsUpdated, this,
           &Player::updateStats);
@@ -300,22 +370,12 @@ Player::Player(Application *app, QWidget *parent)
 
   connect(showSongMetadataAction, &QAction::triggered, this,
           &Player::showCurrentSongMetadata);
-  auto quitApplication = [&]() {
-    QSettings settings;
-    settings.beginGroup("player");
-    settings.setValue("geometry", saveGeometry());
-    settings.endGroup();
-    QApplication::quit();
-  };
   connect(quitAction, &QAction::triggered, quitApplication);
   connect(close_pushButton, &QPushButton::clicked,
-          [&]() { (trayIcon->isVisible()) ? hide() : QApplication::quit(); });
-  connect(aboutAction, &QAction::triggered, []() {
-    std::unique_ptr<AboutDialog> abt(new AboutDialog());
-    abt->exec();
-  });
+          [=]() { (trayIcon->isVisible()) ? hide() : QApplication::quit(); });
+  connect(aboutAction, &QAction::triggered, aboutApplication);
   connect(trayIcon, &SystemTrayIcon::activated, this,
-          [&]() { (isHidden()) ? show() : hide(); });
+          [=]() { (isHidden()) ? show() : hide(); });
   connect(expand_collapse_PushButton, &QPushButton::clicked, this,
           &Player::expandCollapse);
 
@@ -326,7 +386,7 @@ Player::Player(Application *app, QWidget *parent)
     playbackCtrlr_->previous();
     dataAccess_->getMPDStatus();
   });
-  connect(next_pushButton, &QPushButton::clicked, [&]() {
+  connect(next_pushButton, &QPushButton::clicked, [=]() {
     playbackCtrlr_->next();
     dataAccess_->getMPDStatus();
   });
@@ -338,7 +398,7 @@ Player::Player(Application *app, QWidget *parent)
           &Player::setPosition);
   connect(track_slider, &TrackSlider::sliderReleased, this,
           &Player::positionSliderReleased);
-  connect(track_slider, &TrackSlider::valueChanged, [&](int value) {
+  connect(track_slider, &TrackSlider::valueChanged, [=](const int value) {
     trayIcon->trayIconUpdateProgress(value, track_slider->maximum());
   });
   connect(track_slider, SIGNAL(seekBackward()), this, SLOT(seekBackward()));
@@ -367,44 +427,54 @@ Player::Player(Application *app, QWidget *parent)
   // update current playlist model
   connect(dataAccess_.get(), &MPDdata::MPDPlaylistinfoUpdated,
           currentPlaylistModel_, &CurrentPlaylistModel::updateModel);
-  connect(playlist_view, &CurrentPlaylistView::doubleClicked,
+  connect(playlist_view, &QListView::doubleClicked,
           currentPlaylistModel_, &CurrentPlaylistModel::doubleClicked);
   connect(currentPlaylistModel_, &CurrentPlaylistModel::playSong,
-          [&](quint32 song) { playbackCtrlr_->play(song); });
+          [=](const quint32 song) { playbackCtrlr_->play(song); });
+  // metadata single slingshot
+  QTimer::singleShot(3000, this, showMetadataSlingshot);
 
   // update status & stats when starting the application
   dataAccess_->getMPDStatus();
   dataAccess_->getMPDStats();
 }
 
-QSize Player::sizeHint() const { return QSize(width(), 50); }
+QSize Player::sizeHint() const { return QSize(100, 40); }
 
 Player::~Player() { delete ui_; }
 
 void Player::mousePressEvent(QMouseEvent *event) {
   dragPosition = event->pos();
-  QWidget::mousePressEvent(event);
-  if (event->button() == Qt::LeftButton) {
+  if (event->button() == Qt::LeftButton &&
+      cursor().shape() != Qt::SizeFDiagCursor) {
     setCursor(Qt::SizeAllCursor);
   }
+  QWidget::mousePressEvent(event);
 }
 
 void Player::mouseReleaseEvent(QMouseEvent *event) {
   dragPosition = QPoint();
-  QWidget::mouseReleaseEvent(event);
   if (event->button() == Qt::LeftButton) {
     setCursor(Qt::ArrowCursor);
   }
+  QWidget::mouseReleaseEvent(event);
 }
 
 void Player::leaveEvent(QEvent *) {
-  previous_pushButton->hide();
-  play_pause_pushButton->hide();
-  next_pushButton->hide();
-  volume_pushButton->hide();
-  track_slider->hide();
-  timer_label->hide();
-  currentSongMetadata_label->show();
+  if (!volume_popup->isVisible() && show_metadata_on_mouse_leave_) {
+    previous_pushButton->hide();
+    play_pause_pushButton->hide();
+    next_pushButton->hide();
+    volume_pushButton->hide();
+    track_slider->hide();
+    timer_label->hide();
+    // these two lines solve First time player resize showing
+    // currentSongMetadata_label(need to fix)
+    /*currentSongMetadata_label->setFixedWidth(track_slider->width() +
+                                             timer_label->width());
+    currentSongMetadata_label->updateSongMetadataText(false);*/
+    currentSongMetadata_label->show();
+  }
 }
 
 void Player::enterEvent(QEvent *) {
@@ -462,33 +532,55 @@ void Player::resizeEvent(QResizeEvent *) {
   currentSongMetadata_label->updateSongMetadataText(false);
 }
 
+bool Player::eventFilter(QObject *target, QEvent *event) {
+  if (target == mainWidget) {
+    if (event->type() == QEvent::MouseMove) {
+    }
+  } else if (target == playlist_view->viewport()) {
+    if (event->type() == QEvent::MouseMove) {
+      if (cursor().shape() == Qt::SizeFDiagCursor) {
+        setCursor(Qt::ArrowCursor);
+        resize_status = false;
+      }
+    }
+  }
+  return QWidget::eventFilter(target, event);
+}
+
 int Player::showMpdConnectionDialog() {
   std::unique_ptr<MpdConnectionDialog> connect(new MpdConnectionDialog(this));
   return connect->exec();
 }
 
 void Player::expandCollapse() {
-  /*if (!playlist_view->isVisible()) {
+  if (!stack_widget->isVisible()) {
     expand_collapse_PushButton->setIcon(
         IconLoader::load("edit-collapse", IconLoader::LightDark));
-    playlist_view->setVisible(true);
+    setFixedHeight(fullHeight_);
+    stack_widget->setVisible(true);
+    // method to reverse fixed height
+    setMaximumSize(QWIDGETSIZE_MAX, QWIDGETSIZE_MAX);
+    setMinimumSize(0, 0);
   } else {
+    fullHeight_ = height();
+    collapsedHeight_ = height() - stack_widget->height();
     expand_collapse_PushButton->setIcon(
         IconLoader::load("edit-expand", IconLoader::LightDark));
-    playlist_view->setVisible(false);
-  }*/
+    stack_widget->setVisible(false);
+    setFixedHeight(collapsedHeight_);
+  }
 }
 
 void Player::showVolumeSlider() {
-  volume_popup->show();
   QPoint position = volume_pushButton->pos();
-
+  // Position volume popup window accordingly
   position.setX(position.x() + (volume_pushButton->width() / 2));
   position.setX(position.x() - (volume_popup->width() / 2));
   position.setY(position.y() + (volume_pushButton->height() / 2));
   position.setY(position.y() -
                 (volume_popup->height() - (VolumePopup::blur_padding * 2)));
   volume_popup->move(mapToGlobal(position));
+  volume_popup->show();
 }
 
 void Player::updateStats() {
@@ -629,7 +721,7 @@ void Player::updateStatus() {
   lastPlaylist = dataAccess_->playlist();
 }
 
-void Player::playPauseTrack() {
+void Player::playPauseTrack() const {
   if (dataAccess_->state() == MPDPlaybackState::Playing) {
     playbackCtrlr_->pause(1);
   } else if (dataAccess_->state() == MPDPlaybackState::Paused) {
@@ -643,26 +735,26 @@ void Player::playPauseTrack() {
   dataAccess_->getMPDStatus();
 }
 
-void Player::stopTrack() {
+void Player::stopTrack() const {
   playbackCtrlr_->stop();
   dataAccess_->getMPDStatus();
 }
 
 void Player::positionSliderPressed() { draggingPositionSlider = true; }
 
-void Player::setPosition() {
+void Player::setPosition() const {
   playbackCtrlr_->seekId(static_cast<quint32>(dataAccess_->songId()),
                          static_cast<quint32>(track_slider->value()));
   dataAccess_->getMPDStatus();
 }
 
-void Player::seekBackward() {
+void Player::seekBackward() const {
   playbackCtrlr_->seekId(static_cast<quint32>(dataAccess_->songId()),
                          static_cast<quint32>(track_slider->value() - 10));
   dataAccess_->getMPDStatus();
 }
 
-void Player::seekForward() {
+void Player::seekForward() const {
   playbackCtrlr_->seekId(static_cast<quint32>(dataAccess_->songId()),
                          static_cast<quint32>(track_slider->value() + 10));
   dataAccess_->getMPDStatus();
@@ -670,7 +762,9 @@ void Player::seekForward() {
 
 void Player::positionSliderReleased() { draggingPositionSlider = false; }
 
-void Player::setVolume(quint8 value) { playbackOptionsCtrlr_->setvol(value); }
+void Player::setVolume(const quint8 value) const {
+  playbackOptionsCtrlr_->setvol(value);
+}
 
 void Player::showCurrentSongMetadata() {
   QMessageBox mBox;

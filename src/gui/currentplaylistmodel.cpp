@@ -71,5 +71,5 @@ void CurrentPlaylistModel::updateModel() {
 }
 
 void CurrentPlaylistModel::doubleClicked(QModelIndex index) {
-  emit playSong(index.row());
+  emit playSong(index.row()-1);
 }

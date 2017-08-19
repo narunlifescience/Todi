@@ -37,7 +37,15 @@ HEADERS += core/application.h \
            lib/currentplaylistcontroller.h \
            gui/currentplaylistmodel.h \
            gui/currentplaylistview.h \
-           gui/systemtrayicon.h
+           gui/systemtrayicon.h \
+           tooltip/tips.h \
+           tooltip/tooltip.h \
+           tooltip/reuse.h \
+           tooltip/effects.h \
+           tooltip/faketooltip.h \
+           utils/hostosinfo.h \
+           utils/osspecificaspects.h \
+    widgets/mainwidget.h
 
 FORMS +=   gui/AboutDialog.ui \
            gui/MpdConnectionDialog.ui \
@@ -65,4 +73,9 @@ SOURCES += main.cpp \
            lib/currentplaylistcontroller.cpp \
            gui/currentplaylistmodel.cpp \
            gui/currentplaylistview.cpp \
-           gui/systemtrayicon.cpp
+           gui/systemtrayicon.cpp \
+           tooltip/tips.cpp \
+           tooltip/tooltip.cpp \
+           tooltip/faketooltip.cpp \
+           utils/hostosinfo.cpp \
+    widgets/mainwidget.cpp
