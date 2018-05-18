@@ -1,5 +1,6 @@
 #Todi MPD client music player
 QT += widgets network xml svg
+CONFIG += c++11
 
 TARGET = Todi
 TEMPLATE = app
@@ -11,7 +12,7 @@ RESOURCES = ../data/icons.qrc
 INCLUDEPATH += ../3rdparty/taglib/include
 LIBS += -L"../3rdparty/taglib/lib" -ltag
 
-# if you would like qDebug() output please comment out yhe following line
+# if you would like qDebug() output please comment out the following line
 DEFINES += QT_NO_DEBUG_OUTPUT
 
 HEADERS += core/application.h \
