@@ -20,6 +20,7 @@ class CurrentPlaylistModel : public QAbstractListModel {
   qint32 getRowId(qint32 row) const;
   qint32 getRowPos(qint32 row) const;
   qint32 songIdToRow(qint32 id) const;
+  qint32 getCurrentSongId() const { return song_id; }
 
  signals:
   void playSong(quint32 song);
@@ -29,9 +30,9 @@ class CurrentPlaylistModel : public QAbstractListModel {
   void doubleClicked(QModelIndex index);
 
  private:
-  QList<MPDSongMetadata *> *playlistQueue_;
+  const QList<MPDSongMetadata *> *playlistQueue_;
   qint32 song_id;
-  qint32 lastClickedRow;
+  qint32 lastsong_id;
 };
 
 #endif  // CURRENTPLAYLISTMODEL_H

@@ -155,6 +155,7 @@ QPair<QByteArray, bool> MPDSocket::sendCommand(const QByteArray &command,
 
   if (!mpdCmdResponse.second) {
     qWarning() << "sent Command: " << command << " failed!";
+    emit commandsent(command, mpdCmdResponse.first);
 
     // Try one more time if retry status is true
     if (mpdCmdResponse.first.isEmpty() && retry) {
@@ -164,100 +165,122 @@ QPair<QByteArray, bool> MPDSocket::sendCommand(const QByteArray &command,
   }
 
   qDebug() << "sentCommand: " << command << " sucessful!";
+  emit commandsent(command, mpdCmdResponse.first);
   return mpdCmdResponse;
 }
 
 void MPDSocket::onError(const QAbstractSocket::SocketError socketError) const {
   // Handle socket errors
+  const QString errprefix("MPD Socket Error: ");
   switch (socketError) {
     case QAbstractSocket::ConnectionRefusedError:
-      qCritical() << "The connection was refused by the peer (or timed out)";
+      qCritical()
+          << errprefix +
+                 "The connection was refused by the peer (or timed out)";
       break;
     case QAbstractSocket::RemoteHostClosedError:
-      qCritical() << "The remote host closed the connection";
+      qCritical() << errprefix + "The remote host closed the connection";
       break;
     case QAbstractSocket::HostNotFoundError:
-      qCritical() << "The host address was not found" << hostname_;
+      qCritical() << errprefix + "The host address was not found" << hostname_;
       break;
     case QAbstractSocket::SocketAccessError:
-      qCritical() << "The socket operation failed because the application "
-                     "lacked the required privileges";
+      qCritical() << errprefix +
+                         "The socket operation failed because the application "
+                         "lacked the required privileges";
       break;
     case QAbstractSocket::SocketResourceError:
-      qCritical() << "The local system ran out of resources";
+      qCritical() << errprefix + "The local system ran out of resources";
       break;
     case QAbstractSocket::SocketTimeoutError:
-      qCritical() << "The socket operation timed out";
+      qCritical() << errprefix + "The socket operation timed out";
       break;
     case QAbstractSocket::DatagramTooLargeError:
-      qCritical() << "The datagram was larger than the operating system's "
-                     "limit";
+      qCritical() << errprefix +
+                         "The datagram was larger than the operating system's "
+                         "limit";
       break;
     case QAbstractSocket::NetworkError:
-      qCritical() << "An error occurred with the network";
+      qCritical() << errprefix + "An error occurred with the network";
       break;
     case QAbstractSocket::AddressInUseError:
-      qCritical() << "The address specified " << hostname_
+      qCritical() << errprefix + "The address specified " << hostname_
                   << " is already in use & was set to be exclusive.";
       break;
     case QAbstractSocket::SocketAddressNotAvailableError:
-      qCritical() << "The address specified " << hostname_
+      qCritical() << errprefix + "The address specified " << hostname_
                   << " does not belong to the host";
       break;
     case QAbstractSocket::UnsupportedSocketOperationError:
-      qCritical() << "The requested socket operation is not supported by the "
-                     "local operating system";
+      qCritical()
+          << errprefix +
+                 "The requested socket operation is not supported by the "
+                 "local operating system";
       break;
     case QAbstractSocket::ProxyAuthenticationRequiredError:
-      qCritical() << "The socket is using a proxy & the proxy requires "
-                     "authentication";
+      qCritical() << errprefix +
+                         "The socket is using a proxy & the proxy requires "
+                         "authentication";
       break;
     case QAbstractSocket::SslHandshakeFailedError:
-      qCritical() << "The SSL/TLS handshake failed, so the connection was "
-                     "closed";
+      qCritical() << errprefix +
+                         "The SSL/TLS handshake failed, so the connection was "
+                         "closed";
       break;
     case QAbstractSocket::UnfinishedSocketOperationError:
-      qCritical() << "Used by QAbstractSocketEngine only, The last operation "
-                     "attempted has not finished yet";
+      qCritical()
+          << errprefix +
+                 "Used by QAbstractSocketEngine only, The last operation "
+                 "attempted has not finished yet";
       break;
     case QAbstractSocket::ProxyConnectionRefusedError:
-      qCritical() << "Could not contact the proxy server connection denied";
+      qCritical() << errprefix +
+                         "Could not contact the proxy server connection denied";
       break;
     case QAbstractSocket::ProxyConnectionClosedError:
-      qCritical() << "The connection to the proxy server closed unexpectedly";
+      qCritical()
+          << errprefix +
+                 "The connection to the proxy server closed unexpectedly";
       break;
     case QAbstractSocket::ProxyConnectionTimeoutError:
-      qCritical() << "The connection to the proxy server timed out or the "
-                     "proxy server stopped responding in the authentication "
-                     "phase";
+      qCritical()
+          << errprefix +
+                 "The connection to the proxy server timed out or the "
+                 "proxy server stopped responding in the authentication "
+                 "phase";
       break;
     case QAbstractSocket::ProxyNotFoundError:
-      qCritical() << "The proxy address was not found";
+      qCritical() << errprefix + "The proxy address was not found";
       break;
     case QAbstractSocket::ProxyProtocolError:
-      qCritical() << "The connection negotiation with the proxy server "
-                     "failed, because the response from the proxy server "
-                     "could not be understood";
+      qCritical() << errprefix +
+                         "The connection negotiation with the proxy server "
+                         "failed, because the response from the proxy server "
+                         "could not be understood";
       break;
     case QAbstractSocket::OperationError:
-      qCritical() << "An operation was attempted while the socket was in a "
-                     "state that did not permit it";
+      qCritical() << errprefix +
+                         "An operation was attempted while the socket was in a "
+                         "state that did not permit it";
       break;
     case QAbstractSocket::SslInternalError:
-      qCritical() << "The SSL library being used reported an internal error. "
-                     "This is probably the result of a bad installation or "
-                     "misconfiguration of the library";
+      qCritical()
+          << errprefix +
+                 "The SSL library being used reported an internal error. "
+                 "This is probably the result of a bad installation or "
+                 "misconfiguration of the library";
       break;
     case QAbstractSocket::SslInvalidUserDataError:
-      qCritical() << "Invalid data (certificate, key, cypher, etc.) was "
-                     "provided and its use resulted in an error in the "
-                     "SSL library";
+      qCritical() << errprefix +
+                         "Invalid data (certificate, key, cypher, etc.) was "
+                         "provided and its use resulted in an error in the "
+                         "SSL library";
       break;
     case QAbstractSocket::TemporaryError:
-      qCritical() << "A temporary error occurred";
+      qCritical() << errprefix + "A temporary error occurred";
       break;
     case QAbstractSocket::UnknownSocketError:
-      qCritical() << "An unidentified error occurred";
+      qCritical() << errprefix + "An unidentified error occurred";
       break;
   }
 }

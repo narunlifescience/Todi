@@ -25,7 +25,7 @@
 
 #pragma once
 
-#include "../utils/hostosinfo.h"
+#include "../../utils/hostosinfo.h"
 
 #include <QApplication>
 #include <QDesktopWidget>

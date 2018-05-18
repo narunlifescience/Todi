@@ -4,7 +4,7 @@
 #include <QImage>
 #include <QObject>
 
-#include <fileref.h>
+#include <taglib/fileref.h>
 #include <taglib/taglib.h>
 
 // class TagLib;

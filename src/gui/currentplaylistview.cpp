@@ -1,4 +1,5 @@
 #include "currentplaylistview.h"
+#include "currentplaylistmodel.h"
 
 #include <QPainter>
 
@@ -8,9 +9,7 @@ CurrentPlaylistViewDeligate::CurrentPlaylistViewDeligate(QObject *parent)
 void CurrentPlaylistViewDeligate::paint(QPainter *painter,
                                         const QStyleOptionViewItem &option,
                                         const QModelIndex &index) const {
-  if (index.row() == 0) {
-    return;
-  }
+  if (index.row() == 0) return;
 
   QRect r = option.rect;
   QColor text_color = QColor(200, 200, 200, 200);
@@ -30,23 +29,7 @@ void CurrentPlaylistViewDeligate::paint(QPainter *painter,
     painter->setBrush(gradientSelected);
     painter->setPen(Qt::NoPen);
     painter->drawRect(r);
-
-    // BORDER
-    /*painter->setPen(lineMarkedPen);
-    painter->drawLine(r.topLeft(), r.topRight());
-    painter->drawLine(r.topRight(), r.bottomRight());
-    painter->drawLine(r.bottomLeft(), r.bottomRight());
-    painter->drawLine(r.topLeft(), r.bottomLeft());*/
-
-    // painter->setPen(fontMarkedPen);
-
   } else {
-    // BACKGROUND
-    // ALTERNATING COLORS
-    // painter->setBrush((index.row() % 2) ? Qt::white : QColor(252, 252, 252));
-    // painter->drawRect(r);
-
-    // BORDER
     QColor line_color = text_color;
     QLinearGradient grad_color(r.bottomLeft(), r.bottomRight());
     const double fade_start_end = (r.width() / 3.0) / r.width();
@@ -59,6 +42,18 @@ void CurrentPlaylistViewDeligate::paint(QPainter *painter,
     grad_color.setColorAt(1, line_color);
     painter->setPen(QPen(grad_color, 1));
     painter->drawLine(r.bottomLeft(), r.bottomRight());
+
+    // Mouse hover event
+    if (option.state & QStyle::State_MouseOver) {
+      QLinearGradient gradientSelected(r.left(), r.top(), r.left(),
+                                       r.height() + r.top());
+      gradientSelected.setColorAt(0.0, QColor::fromRgb(119, 213, 247, 30));
+      gradientSelected.setColorAt(0.9, QColor::fromRgb(27, 134, 183, 30));
+      gradientSelected.setColorAt(1.0, QColor::fromRgb(0, 120, 174, 30));
+      painter->setBrush(gradientSelected);
+      painter->setPen(Qt::NoPen);
+      painter->drawRect(r);
+    }
   }
 
   int imageSpace = 10;
@@ -69,6 +64,21 @@ void CurrentPlaylistViewDeligate::paint(QPainter *painter,
   QString description =
       fm.elidedText(index.data(Qt::UserRole).toString(), Qt::ElideRight,
                     r.width() - imageSpace - 50);
+
+  // get the model to get current song id
+  const CurrentPlaylistModel *mod =
+      static_cast<const CurrentPlaylistModel *>(index.model());
+
+  if (mod->getCurrentSongId() == index.row()) {
+    QLinearGradient gradientSelected(r.left(), r.top(), r.left(),
+                                     r.height() + r.top());
+    gradientSelected.setColorAt(0.0, QColor::fromRgb(119, 21, 24, 150));
+    gradientSelected.setColorAt(0.9, QColor::fromRgb(27, 13, 18, 150));
+    gradientSelected.setColorAt(1.0, QColor::fromRgb(0, 12, 17, 150));
+    painter->setBrush(gradientSelected);
+    painter->setPen(Qt::NoPen);
+    painter->drawRect(r);
+  }
 
   if (!icon.isNull()) {
     // ICON

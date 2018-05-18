@@ -30,6 +30,7 @@
 #include <QSizeGrip>
 #include <QSpacerItem>
 #include <QTimer>
+#include <QTreeView>
 #include <QWidget>
 
 #include <math.h>
@@ -44,6 +45,7 @@
 #include <QStackedWidget>
 #include <QStyle>
 #include <QStyleOptionSlider>
+#include <QTableWidget>
 #include <QTimer>
 #include <QToolTip>
 #include <QWheelEvent>
@@ -55,11 +57,15 @@
 #include "systemtrayicon.h"
 #include "widgets/TrackSlider.h"
 #include "widgets/VolumePopup.h"
+#include "widgets/console/consolewidget.h"
 #include "widgets/currentcoverartlabel.h"
 #include "widgets/currentsongmetadatalabel.h"
+#include "widgets/metadatawidget.h"
+#include "widgets/tabbar.h"
 
 #include "currentplaylistmodel.h"
 #include "currentplaylistview.h"
+#include "models/filemodel.h"
 #include "mpdclient.h"
 #include "mpddata.h"
 #include "playbackcontroller.h"
@@ -69,9 +75,8 @@
 const int Player::constBlurRadius_ = 5;
 
 Player::Player(Application *app, QWidget *parent)
-    : QWidget(
-          parent,
-          Qt::FramelessWindowHint | Qt::WindowStaysOnTopHint | Qt::SubWindow),
+    : QWidget(parent, Qt::FramelessWindowHint | Qt::WindowStaysOnTopHint |
+                          Qt::SubWindow),
       ui_(new Ui_Player),
       app_(app),
       mpdClient_(app_->mpdClient()),
@@ -101,7 +106,11 @@ Player::Player(Application *app, QWidget *parent)
       currentSongMetadata_label(new CurrentSongMetadataLabel(app_, mainWidget)),
       volume_popup(new VolumePopup(mainWidget)),
       stack_widget(new QStackedWidget(this)),
+      metadata_widget(new MetadataWidget(this)),
+      fancy_tab_widget(new FancyTabWidget()),
+      console_widget_(new ConsoleWidget()),
       playlist_view(new QListView(this)),
+      folder_view_(new QTreeView(this)),
       resize_status(false),
       trayIcon(nullptr),
       consumePingpong(true),
@@ -219,8 +228,12 @@ Player::Player(Application *app, QWidget *parent)
       "    subcontrol-position: top;"
       "    subcontrol-origin: margin;"
       "}");
+  fancy_tab_widget->setStyleSheet(
+      ".QWidget{border-radius: 0px; background-color: rgba(155, 70, 70, 225); "
+      "border: 0px solid #5c5c5c;}");
 
   playlist_view->setItemDelegate(new CurrentPlaylistViewDeligate());
+  playlist_view->setSelectionMode(QAbstractItemView::ExtendedSelection);
   playlist_view->setWrapping(false);
   playlist_view->setLayoutMode(QListView::Batched);
   playlist_view->setBatchSize(500);
@@ -278,12 +291,37 @@ Player::Player(Application *app, QWidget *parent)
   // miniplayerWidget->setLayout(hboxfinal);
   // mainWidget->setFixedHeight(48);
 
+  QHBoxLayout *hboxfancy = new QHBoxLayout();
+  fancy_tab_widget->AddTab(
+      playlist_view,
+      IconLoader::load("view-media-currentlist", IconLoader::LightDark),
+      "Qeue");
+  fancy_tab_widget->AddTab(
+      folder_view_,
+      IconLoader::load("view-media-folder", IconLoader::LightDark), "Folders");
+  fancy_tab_widget->AddTab(
+      metadata_widget,
+      IconLoader::load("view-media-metadata", IconLoader::LightDark),
+      "Metadata");
+  fancy_tab_widget->AddSpacer(5);
+  fancy_tab_widget->AddTab(
+      console_widget_, IconLoader::load("view-console", IconLoader::LightDark),
+      "Console");
+  fancy_tab_widget->SetMode(FancyTabWidget::Mode::Mode_LargeSidebar);
+  hboxfancy->setContentsMargins(0, 0, 0, 0);
+  hboxfancy->setSpacing(0);
+  hboxfancy->addWidget(fancy_tab_widget, 0);
+  hboxfancy->addWidget(stack_widget, 1);
+  stack_widget->addWidget(playlist_view);
+  stack_widget->addWidget(folder_view_);
+  stack_widget->addWidget(metadata_widget);
+  stack_widget->addWidget(console_widget_);
+
   QVBoxLayout *vboxfinal = new QVBoxLayout(mainWidget);
   vboxfinal->setContentsMargins(0, 0, 0, 0);
   vboxfinal->setSpacing(0);
   vboxfinal->addLayout(hboxfinal, 0);
-  vboxfinal->addWidget(stack_widget, 1);
-  stack_widget->addWidget(playlist_view);
+  vboxfinal->addLayout(hboxfancy, 1);
 
   mainWidget->layout()->setSizeConstraint(QLayout::SetNoConstraint);
   timer_label->setText("--:--");
@@ -294,6 +332,10 @@ Player::Player(Application *app, QWidget *parent)
   currentPlaylistModel_ =
       new CurrentPlaylistModel(dataAccess_->getPlaylistinfoValues());
   playlist_view->setModel(currentPlaylistModel_);
+
+  // update folder browse view
+  filemodel_ = new FileModel(folder_view_, dataAccess_->getListallValues());
+  folder_view_->setModel(filemodel_);
 
   this->setMouseTracking(true);
 
@@ -362,6 +404,16 @@ Player::Player(Application *app, QWidget *parent)
     }
   };
 
+  // Console widget
+  connect(mpdClient_, &MPDClient::commandsent, console_widget_,
+          &ConsoleWidget::commandwithresults);
+  connect(console_widget_, &ConsoleWidget::sendCommand, mpdClient_,
+          &MPDClient::sendcommand);
+
+  // Fancy tab widget tab changes
+  connect(fancy_tab_widget, &FancyTabWidget::CurrentChanged,
+          [&](int tab) { stack_widget->setCurrentIndex(tab); });
+
   // MPD
   connect(dataAccess_.get(), &MPDdata::MPDStatsUpdated, this,
           &Player::updateStats);
@@ -390,6 +442,8 @@ Player::Player(Application *app, QWidget *parent)
     playbackCtrlr_->next();
     dataAccess_->getMPDStatus();
   });
+  connect(consumeAction, &QAction::toggled,
+          [=](bool status) { playbackOptionsCtrlr_->consume(status); });
 
   // volume & track slider
   connect(track_slider, &TrackSlider::sliderPressed, this,
@@ -422,13 +476,25 @@ Player::Player(Application *app, QWidget *parent)
 
   // Cover art loading
   connect(dataAccess_.get(), &MPDdata::MPDSongMetadataUpdated,
-          currentArtLoader_, &CurrentArtLoader::loadCoverArt);
+          currentArtLoader_, &CurrentArtLoader::loadCoverArt,
+          Qt::QueuedConnection);
+
+  // Update MetadataWidget
+  connect(dataAccess_.get(), &MPDdata::MPDSongMetadataUpdated, [&]() {
+    metadata_widget->setMetadata(dataAccess_->getSongMetadataValues());
+  });
+
+  // Update Folder View
+  connect(dataAccess_.get(), &MPDdata::MPDListallUpdated, filemodel_,
+          &FileModel::ViewUpdated);
 
   // update current playlist model
   connect(dataAccess_.get(), &MPDdata::MPDPlaylistinfoUpdated,
           currentPlaylistModel_, &CurrentPlaylistModel::updateModel);
-  connect(playlist_view, &QListView::doubleClicked,
-          currentPlaylistModel_, &CurrentPlaylistModel::doubleClicked);
+  connect(this, &Player::songChanged, currentPlaylistModel_,
+          &CurrentPlaylistModel::updateCurrentSong);
+  connect(playlist_view, &QListView::doubleClicked, currentPlaylistModel_,
+          &CurrentPlaylistModel::doubleClicked);
   connect(currentPlaylistModel_, &CurrentPlaylistModel::playSong,
           [=](const quint32 song) { playbackCtrlr_->play(song); });
   // metadata single slingshot
@@ -437,6 +503,8 @@ Player::Player(Application *app, QWidget *parent)
   // update status & stats when starting the application
   dataAccess_->getMPDStatus();
   dataAccess_->getMPDStats();
+  dataAccess_->getMPDListall();
+  dataAccess_->getMPDPlaylistInfo();
 }
 
 QSize Player::sizeHint() const { return QSize(100, 40); }
@@ -558,6 +626,7 @@ void Player::expandCollapse() {
         IconLoader::load("edit-collapse", IconLoader::LightDark));
     setFixedHeight(fullHeight_);
     stack_widget->setVisible(true);
+    fancy_tab_widget->setVisible(true);
     // method to reverse fixed height
     setMaximumSize(QWIDGETSIZE_MAX, QWIDGETSIZE_MAX);
     setMinimumSize(0, 0);
@@ -567,6 +636,7 @@ void Player::expandCollapse() {
     expand_collapse_PushButton->setIcon(
         IconLoader::load("edit-expand", IconLoader::LightDark));
     stack_widget->setVisible(false);
+    fancy_tab_widget->setVisible(false);
     setFixedHeight(collapsedHeight_);
   }
 }
@@ -681,6 +751,7 @@ void Player::updateStatus() {
       (lastState == MPDPlaybackState::Stopped &&
        dataAccess_->state() == MPDPlaybackState::Playing) ||
       lastSongId != dataAccess_->songId()) {
+    emit songChanged(dataAccess_->song() + 1);
     dataAccess_->getMPDSongMetadata();
     // truncateSongMetadataLabelString();
   }

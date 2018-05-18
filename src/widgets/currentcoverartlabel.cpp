@@ -30,6 +30,8 @@ CurrentCoverArtLabel::CurrentCoverArtLabel(Application *app, QWidget *parent)
   tipwidgetLayout_->addWidget(pixmaptipLabel_);
   tipwidgetLayout_->setContentsMargins(1, 1, 1, 1);
 
+  setCoverArtAsTodi();
+
   connect(
       app_->currentArtLoader(), &CurrentArtLoader::coverArtProcessed,
       [&](QImage *image) {
@@ -57,6 +59,10 @@ void CurrentCoverArtLabel::setCoverArt(QImage *image,
 
   updateCoverArt();
   setCoverArtTooltip();
+}
+
+void CurrentCoverArtLabel::setCoverArtAsTodi() {
+  setPixmap(QPixmap(":/icons/todi.svg"));
 }
 
 void CurrentCoverArtLabel::setCoverArtTooltip() {

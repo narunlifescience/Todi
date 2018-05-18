@@ -14,8 +14,8 @@
    along with Todi.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include <QThread>
 #include <QDebug>
+#include <QThread>
 
 #include "../lib/mpdclient.h"
 #include "../tagger/currentartloader.h"
@@ -25,10 +25,15 @@
 class ApplicationImpl {
  public:
   ApplicationImpl(Application* app)
-      : tagreader_([=]() { return new CurrentArtLoader(app); }),
+      : tagreader_([=]() {
+          CurrentArtLoader* currentartloader = new CurrentArtLoader(app);
+          app->MoveToNewThread(currentartloader);
+          return currentartloader;
+        }),
         mpdclient_([=]() { return new MPDClient(app); }) {}
   Lazy<CurrentArtLoader> tagreader_;
   Lazy<MPDClient> mpdclient_;
+
 };
 
 Application::Application(QObject* parent)

@@ -29,17 +29,14 @@
 CurrentSongMetadataLabel::CurrentSongMetadataLabel(Application *app,
                                                    QWidget *parent)
     : QLabel(parent), app_(app), showHideAnimation_(new QTimeLine(500, this)) {
-  setText("Todi");
+  setSongMetadataAsTodi();
   // opacity setting range
   showHideAnimation_->setFrameRange(0, 255);
 
   connect(showHideAnimation_, &QTimeLine::frameChanged, this,
           &CurrentSongMetadataLabel::setOpacity);
-  connect(
-      app_->currentArtLoader(), &CurrentArtLoader::coverArtProcessed, [&]() {
-        updateSongMetadata(app_->mpdClient()->getSharedMPDdataPtr()->title(),
-                           app_->mpdClient()->getSharedMPDdataPtr()->album());
-      });
+  connect(app_->currentArtLoader(), &CurrentArtLoader::coverArtProcessed, this,
+          &CurrentSongMetadataLabel::songMetadataUpdated);
 }
 
 CurrentSongMetadataLabel::~CurrentSongMetadataLabel() {}
@@ -89,3 +86,10 @@ void CurrentSongMetadataLabel::updateSongMetadata(const QString arg1,
   songMetaData_.second = arg2;
   updateSongMetadataText();
 }
+
+void CurrentSongMetadataLabel::songMetadataUpdated() {
+  updateSongMetadata(app_->mpdClient()->getSharedMPDdataPtr()->title(),
+                     app_->mpdClient()->getSharedMPDdataPtr()->album());
+}
+
+void CurrentSongMetadataLabel::setSongMetadataAsTodi() { setText(" Todi"); }

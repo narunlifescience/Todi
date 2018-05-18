@@ -9,7 +9,11 @@
         <file>icons/dark/media-skip-backward.svg</file>
         <file>icons/dark/media-playback-volume.svg</file>
         <file>icons/dark/edit-find.svg</file>
+        <file>icons/dark/view-console.svg</file>
+        <file>icons/dark/view-media-currentlist.svg</file>
+        <file>icons/dark/view-media-metadata.svg</file>
         <file>icons/dark/view-media-playlist.svg</file>
+        <file>icons/dark/view-media-folder.svg</file>
         <file>icons/dark/edit-consume1.svg</file>
         <file>icons/dark/edit-consume2.svg</file>
         <file>icons/light/edit-close.svg</file>
@@ -35,6 +39,5 @@
         <file>icons/nocover.svg</file>
         <file>icons/nocover.png</file>
         <file>icons/todi.svg</file>
-        <file>icons/vtv.png</file>
     </qresource>
 </RCC> 

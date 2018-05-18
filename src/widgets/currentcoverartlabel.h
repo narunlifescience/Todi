@@ -16,6 +16,7 @@ class CurrentCoverArtLabel : public QLabel {
 
  public slots:
   void setCoverArt(QImage *image, MPDSongMetadata *songmetadata);
+  void setCoverArtAsTodi();
   void setCoverArtTooltip();
 
  protected:

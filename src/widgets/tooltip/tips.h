@@ -95,7 +95,7 @@ class WidgetTip : public QTipLabel {
   Q_OBJECT
 
  public:
-  explicit WidgetTip(QWidget *parent = 0);
+  explicit WidgetTip(QWidget *parent = nullptr);
   void pinToolTipWidget(QWidget *parent);
 
   virtual void setContent(const QVariant &content);

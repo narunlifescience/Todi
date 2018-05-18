@@ -32,8 +32,10 @@ class CurrentSongMetadataLabel : public QLabel {
   CurrentSongMetadataLabel(Application *app, QWidget *parent = nullptr);
   ~CurrentSongMetadataLabel();
   void updateSongMetadata(const QString arg1, const QString arg2);
+  void songMetadataUpdated();
 
  public slots:
+  void setSongMetadataAsTodi();
   void updateSongMetadataText(bool animate = true);
   void setOpacity(int value);
 

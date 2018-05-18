@@ -104,13 +104,14 @@ TextTip::TextTip(QWidget *parent) : QTipLabel(parent) {
   setForegroundRole(QPalette::ToolTipText);
   setBackgroundRole(QPalette::ToolTipBase);
   ensurePolished();
-  setMargin(1 +
-            style()->pixelMetric(QStyle::PM_ToolTipLabelFrameWidth, 0, this));
+  setMargin(1 + style()->pixelMetric(QStyle::PM_ToolTipLabelFrameWidth, nullptr,
+                                     this));
   setFrameStyle(QFrame::NoFrame);
   setAlignment(Qt::AlignLeft);
   setIndent(1);
   setWindowOpacity(
-      style()->styleHint(QStyle::SH_ToolTipLabel_Opacity, 0, this) / 255.0);
+      style()->styleHint(QStyle::SH_ToolTipLabel_Opacity, nullptr, this) /
+      255.0);
 }
 
 static bool likelyContainsLink(const QString &s) {
@@ -199,7 +200,7 @@ void WidgetTip::setContent(const QVariant &content) {
 }
 
 void WidgetTip::configure(const QPoint &pos, QWidget *) {
-  //QTC_ASSERT(m_widget && m_layout->count() == 0, return );
+  // QTC_ASSERT(m_widget && m_layout->count() == 0, return );
 
   move(pos);
   m_layout->addWidget(m_widget);
@@ -208,7 +209,7 @@ void WidgetTip::configure(const QPoint &pos, QWidget *) {
 }
 
 void WidgetTip::pinToolTipWidget(QWidget *parent) {
-  //QTC_ASSERT(m_layout->count(), return );
+  // QTC_ASSERT(m_layout->count(), return );
 
   // Pin the content widget: Rip the widget out of the layout
   // and re-show as a tooltip, with delete on close.

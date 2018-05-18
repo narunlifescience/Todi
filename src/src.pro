@@ -28,6 +28,7 @@ HEADERS += core/application.h \
            lib/mpdsocket.h \
            lib/playbackcontroller.h \
            lib/mpdmodel.h \
+           lib/mpdfilemodel.h \
            lib/mpddata.h \
            lib/mpddataparser.h \
            lib/playbackoptionscontroller.h \
@@ -38,18 +39,26 @@ HEADERS += core/application.h \
            gui/currentplaylistmodel.h \
            gui/currentplaylistview.h \
            gui/systemtrayicon.h \
-           tooltip/tips.h \
-           tooltip/tooltip.h \
-           tooltip/reuse.h \
-           tooltip/effects.h \
-           tooltip/faketooltip.h \
+           models/filemodel.h \
+           widgets/tooltip/tips.h \
+           widgets/tooltip/tooltip.h \
+           widgets/tooltip/reuse.h \
+           widgets/tooltip/effects.h \
+           widgets/tooltip/faketooltip.h \
            utils/hostosinfo.h \
            utils/osspecificaspects.h \
-    widgets/mainwidget.h
+           widgets/console/console.h \
+           widgets/console/consolewidget.h \
+           widgets/mainwidget.h \
+           widgets/tabbar.h \
+           widgets/stylehelper.h \
+           widgets/qt_blurimage.h \
+           widgets/metadatawidget.h
 
 FORMS +=   gui/AboutDialog.ui \
            gui/MpdConnectionDialog.ui \
-           gui/Player.ui
+           gui/Player.ui \
+           widgets/console/consolewidget.ui
 
 SOURCES += main.cpp \
            core/application.cpp \
@@ -58,6 +67,7 @@ SOURCES += main.cpp \
            gui/IconLoader.cpp \
            gui/MpdConnectionDialog.cpp \
            gui/globals.cpp \
+           models/filemodel.cpp \
            widgets/TrackSlider.cpp \
            widgets/tracksliderpopup.cpp \
            widgets/VolumePopup.cpp \
@@ -65,6 +75,7 @@ SOURCES += main.cpp \
            lib/mpdsocket.cpp \
            lib/playbackcontroller.cpp \
            lib/mpddata.cpp \
+           lib/mpdfilemodel.cpp \
            lib/mpddataparser.cpp \
            lib/playbackoptionscontroller.cpp \
            tagger/currentartloader.cpp \
@@ -74,8 +85,13 @@ SOURCES += main.cpp \
            gui/currentplaylistmodel.cpp \
            gui/currentplaylistview.cpp \
            gui/systemtrayicon.cpp \
-           tooltip/tips.cpp \
-           tooltip/tooltip.cpp \
-           tooltip/faketooltip.cpp \
+           widgets/tooltip/tips.cpp \
+           widgets/tooltip/tooltip.cpp \
+           widgets/tooltip/faketooltip.cpp \
+           widgets/console/console.cpp \
+           widgets/console/consolewidget.cpp \
            utils/hostosinfo.cpp \
-    widgets/mainwidget.cpp
+           widgets/mainwidget.cpp \
+           widgets/tabbar.cpp \
+           widgets/stylehelper.cpp \
+           widgets/metadatawidget.cpp

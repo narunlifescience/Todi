@@ -45,9 +45,14 @@ class TrackSlider;
 class VolumePopup;
 class CurrentArtLoader;
 class CurrentSongMetadataLabel;
+class MetadataWidget;
 class CurrentCoverArtLabel;
 class CurrentPlaylistModel;
+class FileModel;
+class FancyTabWidget;
+class ConsoleWidget;
 class QListView;
+class QTreeView;
 
 class Player : public QWidget {
   Q_OBJECT
@@ -103,8 +108,13 @@ class Player : public QWidget {
   CurrentSongMetadataLabel *currentSongMetadata_label;
   VolumePopup *volume_popup;
   QStackedWidget *stack_widget;
+  MetadataWidget *metadata_widget;
+  FancyTabWidget *fancy_tab_widget;
+  ConsoleWidget *console_widget_;
   QListView *playlist_view;
+  QTreeView *folder_view_;
   CurrentPlaylistModel *currentPlaylistModel_;
+  FileModel *filemodel_;
   bool resize_status;
   SystemTrayIcon *trayIcon;
   QMenu *trayIconMenu;
@@ -152,6 +162,7 @@ class Player : public QWidget {
   void pauseSong();
   void resumeSong();
   void nowPlaying();
+  void songChanged(quint32 song);
 };
 
 #endif  // PLAYER_H

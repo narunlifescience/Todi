@@ -42,6 +42,10 @@ class MPDClient : public QObject {
   std::shared_ptr<PlaybackOptionsController>
   getSharedPlaybackOptionsControllerPtr() const;
 
+ signals:
+  void commandsent(QString command, QByteArray result);
+  void sendcommand(const QByteArray command);
+
  private:
   std::shared_ptr<MPDSocket> mpdSocket_;
 

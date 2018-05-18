@@ -1,4 +1,5 @@
 #include "mpddataparser.h"
+#include "mpdfilemodel.h"
 
 // MPD status look up keys
 static const QByteArray statusVolumeKey("volume: ");
@@ -153,7 +154,6 @@ void MPDdataParser::parseStats(const QByteArray &data,
 
 void MPDdataParser::parseSongMetadata(const QList<QByteArray> &data,
                                       MPDSongMetadata *songMetadataValues) {
-
   foreach (const QByteArray &line, data) {
     if (line.startsWith(songMetadataFileKey)) {
       songMetadataValues->file =
@@ -214,7 +214,6 @@ void MPDdataParser::parseSongMetadata(const QList<QByteArray> &data,
 
 void MPDdataParser::parsePlaylistQueue(
     const QByteArray &data, QList<MPDSongMetadata *> *playlistQueue) {
-
   QList<QByteArray> songblock;
   QList<QByteArray> lines = data.split('\n');
   foreach (const QByteArray &line, lines) {
@@ -228,5 +227,53 @@ void MPDdataParser::parsePlaylistQueue(
     }
 
     if (!line.isEmpty()) songblock.append(line);
+  }
+}
+
+void MPDdataParser::parseFolderView(const QByteArray &data,
+                                    RootItem *rootitem) {
+  QList<QByteArray> lines = data.split('\n');
+
+  Item *currentDir = rootitem;
+  QStringList currentDirList;
+
+  int amountOfLines = lines.size();
+  for (int i = 0; i < amountOfLines; i++) {
+    QString line(lines.at(i));
+
+    if (line.startsWith("file: ")) {
+      line.remove(0, 6);
+      QStringList parts = line.split("/");
+
+      if (currentDir->type() == Item::Type::TypeRoot)
+        static_cast<RootItem *>(currentDir)
+            ->insertFile(parts.at(parts.size() - 1));
+      else
+        static_cast<FolderItem *>(currentDir)
+            ->insertFile(parts.at(parts.size() - 1));
+    } else if (line.startsWith("directory: ")) {
+      line.remove(0, 11);
+      QStringList parts = line.split("/");
+
+      /* Check how much matches */
+      int depth = 0;
+      for (int j = 0; j < currentDirList.size() && j < parts.size(); j++) {
+        if (currentDirList.at(j) != parts.at(j)) break;
+        depth++;
+      }
+
+      for (int j = currentDirList.size(); j > depth; j--) {
+        currentDir = currentDir->parent();
+      }
+
+      if (currentDir->type() == Item::Type::TypeRoot)
+        currentDir = static_cast<RootItem *>(currentDir)
+                         ->createDirectory(parts.at(parts.size() - 1));
+      else
+        currentDir = static_cast<FolderItem *>(currentDir)
+                         ->createDirectory(parts.at(parts.size() - 1));
+
+      currentDirList = parts;
+    }
   }
 }

@@ -26,7 +26,13 @@ MPDClient::MPDClient(QObject *parent)
       mpdSocket_(new MPDSocket(this)),
       dataAccess_(new MPDdata(this, mpdSocket_)),
       playbackCtrlr_(new PlaybackController(this, mpdSocket_)),
-      playbackOptionsCtrlr_(new PlaybackOptionsController(this, mpdSocket_)) {}
+      playbackOptionsCtrlr_(new PlaybackOptionsController(this, mpdSocket_)) {
+  // signal forwarding
+  connect(mpdSocket_.get(), &MPDSocket::commandsent, this,
+          &MPDClient::commandsent);
+  connect(this, &MPDClient::sendcommand,
+          [=](const QByteArray command) { mpdSocket_->sendCommand(command); });
+}
 
 MPDClient::~MPDClient() {}
 

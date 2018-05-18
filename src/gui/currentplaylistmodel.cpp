@@ -7,13 +7,16 @@ CurrentPlaylistModel::CurrentPlaylistModel(
     : QAbstractListModel(parent),
       playlistQueue_(playlistQueue),
       song_id(-1),
-      lastClickedRow(0) {}
+      lastsong_id(-1) {}
 
 CurrentPlaylistModel::~CurrentPlaylistModel() {}
 
 QVariant CurrentPlaylistModel::headerData(int section,
                                           Qt::Orientation orientation,
                                           int role) const {
+  Q_UNUSED(section)
+  Q_UNUSED(orientation)
+  Q_UNUSED(role)
   return QVariant();
 }
 
@@ -31,7 +34,7 @@ QVariant CurrentPlaylistModel::data(const QModelIndex &index, int role) const {
   if (index.row() >= playlistQueue_->size()) return QVariant();
 
   MPDSongMetadata *metadata = playlistQueue_->at(index.row());
-  if (!metadata) return QVariant();
+  if (!metadata) return QString("no metadata");
 
   switch (role) {
     case Qt::DisplayRole:
@@ -46,7 +49,17 @@ QVariant CurrentPlaylistModel::data(const QModelIndex &index, int role) const {
   return QVariant();
 }
 
-void CurrentPlaylistModel::updateCurrentSong(quint32 id) { song_id = id; }
+void CurrentPlaylistModel::updateCurrentSong(quint32 id) {
+  lastsong_id = song_id;
+  song_id = id;
+
+  setData(index(song_id), QVariant(song_id), Qt::UserRole + 1);
+
+  if (lastsong_id != -1)
+    emit dataChanged(index(lastsong_id), index(lastsong_id));
+
+  if (song_id != -1) emit dataChanged(index(song_id), index(song_id));
+}
 
 qint32 CurrentPlaylistModel::getRowId(qint32 row) const {
   if (playlistQueue_->size() <= row) {
@@ -71,5 +84,11 @@ void CurrentPlaylistModel::updateModel() {
 }
 
 void CurrentPlaylistModel::doubleClicked(QModelIndex index) {
-  emit playSong(index.row()-1);
+  // invalid index
+  if (!index.isValid()) return;
+  // out of bound row value
+  if (index.row() >= playlistQueue_->size()) return;
+
+  const uint position = playlistQueue_->at(index.row())->pos;
+  emit playSong(position);
 }

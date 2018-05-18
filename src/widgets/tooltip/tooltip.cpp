@@ -28,7 +28,7 @@
 #include "reuse.h"
 #include "tips.h"
 #include "faketooltip.h"
-#include "../utils/hostosinfo.h"
+#include "../../utils/hostosinfo.h"
 
 #include <QColor>
 #include <QGuiApplication>
@@ -43,13 +43,13 @@
 using namespace Utils;
 using namespace Internal;
 
-ToolTip::ToolTip() : m_tip(0), m_widget(0) {
+ToolTip::ToolTip() : m_tip(nullptr), m_widget(nullptr) {
   connect(&m_showTimer, &QTimer::timeout, this, &ToolTip::hideTipImmediately);
   connect(&m_hideDelayTimer, &QTimer::timeout, this,
           &ToolTip::hideTipImmediately);
 }
 
-ToolTip::~ToolTip() { m_tip = 0; }
+ToolTip::~ToolTip() { m_tip = nullptr; }
 
 ToolTip *ToolTip::instance() {
   static ToolTip tooltip;
@@ -205,7 +205,7 @@ void ToolTip::hideTipImmediately() {
   if (m_tip) {
     m_tip->close();
     m_tip->deleteLater();
-    m_tip = 0;
+    m_tip = nullptr;
   }
   m_showTimer.stop();
   m_hideDelayTimer.stop();
@@ -217,7 +217,7 @@ void ToolTip::showInternal(const QPoint &pos, const QVariant &content,
                            int typeId, QWidget *w, const QString &helpId,
                            const QRect &rect) {
   if (acceptShow(content, typeId, pos, w, helpId, rect)) {
-    QWidget *target = 0;
+    QWidget *target = nullptr;
     if (HostOsInfo::isWindowsHost())
       target = QApplication::desktop()->screen(Internal::screenNumber(pos, w));
     else
@@ -318,6 +318,7 @@ bool ToolTip::eventFilter(QObject *o, QEvent *event) {
           !m_rect.contains(static_cast<QMouseEvent *>(event)->pos())) {
         hideTipWithDelay();
       }
+    break;
     default:
       break;
   }

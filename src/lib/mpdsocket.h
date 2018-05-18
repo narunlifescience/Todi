@@ -38,6 +38,9 @@ class MPDSocket : public QTcpSocket {
  public slots:
   void onError(const QAbstractSocket::SocketError socketError) const;
 
+signals:
+  void commandsent(QString command, QByteArray result);
+
  private:
   QString hostname_;
   quint16 port_;
