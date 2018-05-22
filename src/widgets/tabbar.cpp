@@ -65,7 +65,12 @@ static void selectTab(QPainter* p, const QRect& rect) {
 }  // namespace
 
 FancyTab::FancyTab(QWidget* tabbar)
-    : QWidget(tabbar), tabbar(tabbar), m_fader(0) {
+    : QWidget(tabbar),
+      tabbar(tabbar),
+      m_fader(0),
+      iconspacing_(10),
+      iconwidth_(22),
+      iconheight_(22) {
   animator.setPropertyName("fader");
   animator.setTargetObject(this);
   setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Maximum);
@@ -90,7 +95,8 @@ void FancyTab::setFader(float value) {
   tabbar->update();
 }
 
-FancyTabBar::FancyTabBar(QWidget* parent) : QWidget(parent) {
+FancyTabBar::FancyTabBar(QWidget* parent)
+    : QWidget(parent), iconspacing_(10), iconwidth_(22), iconheight_(22) {
   setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Expanding);
   setAttribute(Qt::WA_Hover, true);
   setFocusPolicy(Qt::NoFocus);
@@ -111,18 +117,20 @@ FancyTabBar::FancyTabBar(QWidget* parent) : QWidget(parent) {
 FancyTabBar::~FancyTabBar() { delete style(); }
 
 QSize FancyTab::sizeHint() const {
-  int spacing = 10;
-  int width = 22 + spacing;
-  int iconHeight = 22;
-  QSize ret(width, iconHeight + spacing);
+  QSize ret(iconspacing_ + iconwidth_, iconspacing_ + iconheight_);
   return ret;
 }
 
+void FancyTab::setTabSizeHint(int spacing, int width, int height) {
+  iconspacing_ = spacing;
+  iconwidth_ = width;
+  iconheight_ = height;
+  sizeHint();
+}
+
 QSize FancyTabBar::tabSizeHint(bool minimum) const {
-  int spacing = 10;
-  int width = 22 + spacing;
-  int iconHeight = minimum ? 0 : 22;
-  return QSize(width, iconHeight + spacing);
+  Q_UNUSED(minimum)
+  return QSize(iconspacing_ + iconwidth_, iconspacing_ + iconheight_);
 }
 
 void FancyTabBar::paintEvent(QPaintEvent*) {
@@ -158,7 +166,17 @@ QSize FancyTabBar::minimumSizeHint() const {
 }
 
 QRect FancyTabBar::tabRect(int index) const {
-  return m_tabs[index]->geometry();
+  return QRect(0, index * m_tabs[index]->sizeHint().height(),
+               m_tabs[index]->sizeHint().width(),
+               m_tabs[index]->sizeHint().height());
+  // return m_tabs[index]->geometry();
+}
+
+void FancyTabBar::setTabBarSizeHint(int spacing, int width, int height) {
+  iconspacing_ = spacing;
+  iconwidth_ = width;
+  iconheight_ = height;
+  sizeHint();
 }
 
 QString FancyTabBar::tabToolTip(int index) const {
@@ -269,10 +287,10 @@ class FancyColorButton : public QWidget {
 // FancyTabWidget
 //////
 
-FancyTabWidget::FancyTabWidget(QWidget* parent)
+FancyTabWidget::FancyTabWidget(QWidget* parent, Mode mode)
     : QWidget(parent),
-      mode_(Mode_None),
-      tab_bar_(nullptr),
+      mode_(mode),
+      tab_bar_(new FancyTabBar(this)),
       stack_(new QStackedLayout),
       side_widget_(new QWidget),
       side_layout_(new QVBoxLayout),
@@ -283,6 +301,7 @@ FancyTabWidget::FancyTabWidget(QWidget* parent)
   side_layout_->setMargin(0);
   side_layout_->addSpacerItem(
       new QSpacerItem(0, 0, QSizePolicy::Fixed, QSizePolicy::Expanding));
+  side_layout_->insertWidget(0, tab_bar_);
 
   side_widget_->setLayout(side_layout_);
   side_widget_->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Expanding);
@@ -297,15 +316,24 @@ FancyTabWidget::FancyTabWidget(QWidget* parent)
   main_layout->addWidget(side_widget_);
   main_layout->addLayout(top_layout_);
   setLayout(main_layout);
+
+  SetMode(mode_);
+
+  connect(tab_bar_, SIGNAL(currentChanged(int)), SLOT(ShowWidget(int)));
 }
 
 void FancyTabWidget::AddTab(QWidget* tab, const QIcon& icon,
                             const QString& label) {
   stack_->addWidget(tab);
-  items_ << Item(icon, label);
+  Item item = Item(icon, label);
+  items_ << item;
+  tab_bar_->addTab(item.tab_icon_, item.tab_label_);
 }
 
-void FancyTabWidget::AddSpacer(int size) { items_ << Item(size); }
+void FancyTabWidget::AddSpacer(int size) {
+  items_ << Item(size);
+  tab_bar_->addSpacer(size);
+}
 
 void FancyTabWidget::SetBackgroundPixmap(const QPixmap& pixmap) {
   background_pixmap_ = pixmap;
@@ -345,11 +373,7 @@ void FancyTabWidget::paintEvent(QPaintEvent*) {
 int FancyTabWidget::current_index() const { return stack_->currentIndex(); }
 
 void FancyTabWidget::SetCurrentIndex(int index) {
-  if (FancyTabBar* bar = qobject_cast<FancyTabBar*>(tab_bar_)) {
-    bar->setCurrentIndex(index);
-  } else {
-    stack_->setCurrentIndex(index);
-  }
+  tab_bar_->setCurrentIndex(index);
 }
 
 void FancyTabWidget::SetCurrentWidget(QWidget* widget) {
@@ -366,50 +390,61 @@ void FancyTabWidget::AddBottomWidget(QWidget* widget) {
 }
 
 void FancyTabWidget::SetMode(Mode mode) {
-  // Remove previous tab bar
-  delete tab_bar_;
-  tab_bar_ = nullptr;
-
   use_background_ = false;
 
-  // Create new tab bar
   switch (mode) {
-    case Mode_LargeSidebar: {
-      FancyTabBar* bar = new FancyTabBar(this);
+    case Mode::Mode_LargeSidebar: {
       setMinimumWidth(32);
-
-      side_layout_->insertWidget(0, bar);
-      tab_bar_ = bar;
-
-      for (const Item& item : items_) {
-        if (item.type_ == Item::Type_Spacer)
-          bar->addSpacer(item.spacer_size_);
-        else
-          bar->addTab(item.tab_icon_, item.tab_label_);
+      tab_bar_->setTabBarSizeHint(10, 22, 22);
+      tab_bar_->setFixedWidth(32);
+      foreach (FancyTab* tab, tab_bar_->getFancyTabs()) {
+        tab->setTabSizeHint(10, 22, 22);
       }
-
-      bar->setCurrentIndex(stack_->currentIndex());
-      connect(bar, SIGNAL(currentChanged(int)), SLOT(ShowWidget(int)));
-
       use_background_ = false;
     } break;
 
-    case Mode_Tabs:
+    case Mode::Mode_XXSmallSidebar: {
+      setMinimumWidth(20);
+      tab_bar_->setTabBarSizeHint(10, 16, 16);
+      tab_bar_->setFixedWidth(26);
+      foreach (FancyTab* tab, tab_bar_->getFancyTabs()) {
+        tab->setTabSizeHint(10, 16, 16);
+      }
+    } break;
+
+    case Mode::Mode_XXXSmallSidebar: {
+      setMinimumWidth(24);
+      tab_bar_->setTabBarSizeHint(8, 16, 16);
+      tab_bar_->setFixedWidth(24);
+      foreach (FancyTab* tab, tab_bar_->getFancyTabs()) {
+        tab->setTabSizeHint(8, 16, 16);
+      }
+    } break;
+
+    case Mode::Mode_SmallSidebar: {
+      setMinimumWidth(30);
+      tab_bar_->setTabBarSizeHint(8, 22, 22);
+      tab_bar_->setFixedWidth(30);
+      foreach (FancyTab* tab, tab_bar_->getFancyTabs()) {
+        tab->setTabSizeHint(8, 22, 22);
+      }
+    } break;
+
+    case Mode::Mode_XSmallSidebar: {
+      setMinimumWidth(28);
+      tab_bar_->setTabBarSizeHint(10, 18, 18);
+      tab_bar_->setFixedWidth(28);
+      foreach (FancyTab* tab, tab_bar_->getFancyTabs()) {
+        tab->setTabSizeHint(10, 18, 18);
+      }
+    } break;
+
+    case Mode::Mode_None:
+      hide();
       break;
 
-    case Mode_IconOnlyTabs:
-      break;
-
-    case Mode_SmallSidebar:
-      use_background_ = true;
-      break;
-
-    case Mode_PlainSidebar:
-      break;
-
-    case Mode_None:
     default:
-      qWarning() << "Unknown fancy tab mode" << mode;
+      qWarning() << "Unknown fancy tab mode" << static_cast<int>(mode);
       // fallthrough
   }
 
@@ -426,11 +461,13 @@ void FancyTabWidget::contextMenuEvent(QContextMenuEvent* event) {
 
     QSignalMapper* mapper = new QSignalMapper(this);
     QActionGroup* group = new QActionGroup(this);
-    AddMenuItem(mapper, group, tr("Large sidebar"), Mode_LargeSidebar);
-    AddMenuItem(mapper, group, tr("Small sidebar"), Mode_SmallSidebar);
-    AddMenuItem(mapper, group, tr("Plain sidebar"), Mode_PlainSidebar);
-    AddMenuItem(mapper, group, tr("Tabs on top"), Mode_Tabs);
-    AddMenuItem(mapper, group, tr("Icons on top"), Mode_IconOnlyTabs);
+    AddMenuItem(mapper, group, tr("Large sidebar"), Mode::Mode_LargeSidebar);
+    AddMenuItem(mapper, group, tr("Small sidebar"), Mode::Mode_SmallSidebar);
+    AddMenuItem(mapper, group, tr("X Small sidebar"), Mode::Mode_XSmallSidebar);
+    AddMenuItem(mapper, group, tr("XX Small sidebar"),
+                Mode::Mode_XXSmallSidebar);
+    AddMenuItem(mapper, group, tr("XXX Small sidebar"),
+                Mode::Mode_XXXSmallSidebar);
     menu_->addActions(group->actions());
 
     connect(mapper, SIGNAL(mapped(int)), SLOT(SetMode(int)));
@@ -443,7 +480,7 @@ void FancyTabWidget::AddMenuItem(QSignalMapper* mapper, QActionGroup* group,
                                  const QString& text, Mode mode) {
   QAction* action = group->addAction(text);
   action->setCheckable(true);
-  mapper->setMapping(action, mode);
+  mapper->setMapping(action, static_cast<int>(mode));
   connect(action, SIGNAL(triggered()), mapper, SLOT(map()));
 
   if (mode == mode_) action->setChecked(true);

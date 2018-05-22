@@ -107,7 +107,8 @@ Player::Player(Application *app, QWidget *parent)
       volume_popup(new VolumePopup(mainWidget)),
       stack_widget(new QStackedWidget(this)),
       metadata_widget(new MetadataWidget(this)),
-      fancy_tab_widget(new FancyTabWidget()),
+      fancy_tab_widget(
+          new FancyTabWidget(this, FancyTabWidget::Mode::Mode_LargeSidebar)),
       console_widget_(new ConsoleWidget()),
       playlist_view(new QListView(this)),
       folder_view_(new QTreeView(this)),
@@ -221,13 +222,14 @@ Player::Player(Application *app, QWidget *parent)
       "    subcontrol-origin: margin;"
       "}"
       "QScrollBar::sub-line:vertical {"
-      "    background: qlineargradient(x1:0, y1:0, x2:1, y2:0,"
+      /*"    background: qlineargradient(x1:0, y1:0, x2:1, y2:0,"
       "    stop: 0  rgb(32, 47, 130), stop: 0.5 rgb(32, 47, 130),  stop:1 "
-      "rgb(32, 47, 130));"
+      "rgb(32, 47, 130));"*/
       "    height: 0 px;"
-      "    subcontrol-position: top;"
-      "    subcontrol-origin: margin;"
-      "}");
+      /*"    subcontrol-position: top;"
+      "    subcontrol-origin: margin;"*/
+      "}"
+        );
   fancy_tab_widget->setStyleSheet(
       ".QWidget{border-radius: 0px; background-color: rgba(155, 70, 70, 225); "
       "border: 0px solid #5c5c5c;}");
@@ -308,6 +310,7 @@ Player::Player(Application *app, QWidget *parent)
       console_widget_, IconLoader::load("view-console", IconLoader::LightDark),
       "Console");
   fancy_tab_widget->SetMode(FancyTabWidget::Mode::Mode_LargeSidebar);
+  fancy_tab_widget->SetCurrentIndex(0);
   hboxfancy->setContentsMargins(0, 0, 0, 0);
   hboxfancy->setSpacing(0);
   hboxfancy->addWidget(fancy_tab_widget, 0);

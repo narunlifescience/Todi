@@ -5,8 +5,8 @@ CONFIG += c++11
 TARGET = Todi
 TEMPLATE = app
 
-DEPENDPATH += . gui lib
-INCLUDEPATH += . lib
+DEPENDPATH += . beautify gui lib
+INCLUDEPATH += . lib beautify
 RESOURCES = ../data/icons.qrc
 
 INCLUDEPATH += ../3rdparty/taglib/include
@@ -19,7 +19,7 @@ HEADERS += core/application.h \
            core/lazy.h \
            gui/AboutDialog.h \
            gui/Player.h \
-           gui/IconLoader.h \
+           beautify/IconLoader.h \
            gui/MpdConnectionDialog.h \
            gui/globals.h \
            widgets/TrackSlider.h \
@@ -54,7 +54,8 @@ HEADERS += core/application.h \
            widgets/tabbar.h \
            widgets/stylehelper.h \
            widgets/qt_blurimage.h \
-           widgets/metadatawidget.h
+           widgets/metadatawidget.h \
+    beautify/stylesheetproperties.h
 
 FORMS +=   gui/AboutDialog.ui \
            gui/MpdConnectionDialog.ui \
@@ -65,7 +66,7 @@ SOURCES += main.cpp \
            core/application.cpp \
            gui/AboutDialog.cpp \
            gui/Player.cpp \
-           gui/IconLoader.cpp \
+           beautify/IconLoader.cpp \
            gui/MpdConnectionDialog.cpp \
            gui/globals.cpp \
            models/filemodel.cpp \

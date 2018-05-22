@@ -24,6 +24,7 @@ class FancyTab : public QWidget {
   void setFader(float value);
 
   QSize sizeHint() const;
+  void setTabSizeHint(int spacing, int width, int height);
 
   void fadeIn();
   void fadeOut();
@@ -40,6 +41,9 @@ class FancyTab : public QWidget {
   QPropertyAnimation animator;
   QWidget* tabbar;
   float m_fader;
+  int iconspacing_;
+  int iconwidth_;
+  int iconheight_;
 };
 
 class FancyTabBar : public QWidget {
@@ -49,7 +53,7 @@ class FancyTabBar : public QWidget {
   FancyTabBar(QWidget* parent = nullptr);
   ~FancyTabBar();
 
-  void paintEvent(QPaintEvent *);
+  void paintEvent(QPaintEvent*);
   void paintTab(QPainter* painter, int tabIndex) const;
   void mousePressEvent(QMouseEvent*);
   bool validIndex(int index) const {
@@ -75,6 +79,8 @@ class FancyTabBar : public QWidget {
   QString tabText(int index) const { return m_tabs.at(index)->text; }
   int count() const { return m_tabs.count(); }
   QRect tabRect(int index) const;
+  void setTabBarSizeHint(int spacing, int width, int height);
+  QList<FancyTab*> getFancyTabs() { return m_tabs; }
 
  signals:
   void currentChanged(int);
@@ -87,6 +93,9 @@ class FancyTabBar : public QWidget {
   int m_currentIndex;
   QList<FancyTab*> m_tabs;
   QTimer m_triggerTimer;
+  int iconspacing_;
+  int iconwidth_;
+  int iconheight_;
   QSize tabSizeHint(bool minimum = false) const;
 };
 
@@ -94,17 +103,18 @@ class FancyTabWidget : public QWidget {
   Q_OBJECT
 
  public:
-  FancyTabWidget(QWidget* parent = nullptr);
-
   // Values are persisted - only add to the end
-  enum Mode {
+  enum class Mode {
     Mode_None = 0,
     Mode_LargeSidebar = 1,
     Mode_SmallSidebar = 2,
-    Mode_Tabs = 3,
-    Mode_IconOnlyTabs = 4,
-    Mode_PlainSidebar = 5,
+    Mode_XXSmallSidebar = 3,
+    Mode_XXXSmallSidebar = 4,
+    Mode_XSmallSidebar = 5,
   };
+
+  FancyTabWidget(QWidget* parent = nullptr,
+                 Mode mode = Mode::Mode_LargeSidebar);
 
   struct Item {
     Item(const QIcon& icon, const QString& label)
@@ -158,7 +168,7 @@ class FancyTabWidget : public QWidget {
   Mode mode_;
   QList<Item> items_;
 
-  QWidget* tab_bar_;
+  FancyTabBar* tab_bar_;
   QStackedLayout* stack_;
   QPixmap background_pixmap_;
   QWidget* side_widget_;
