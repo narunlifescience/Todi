@@ -20,6 +20,7 @@
 
 #include <QDebug>
 #include <QPainter>
+#include <QScrollBar>
 
 ConsoleWidget::ConsoleWidget(QWidget *parent)
     : QWidget(parent), ui_(new Ui_ConsoleWidget), sentcommand(QString("")) {
@@ -29,6 +30,11 @@ ConsoleWidget::ConsoleWidget(QWidget *parent)
   ui_->gridLayout->setSpacing(0);
   ui_->gridLayout->setContentsMargins(0, 0, 0, 0);
   ui_->console->setFrameShape(QFrame::NoFrame);
+
+  int id = QFontDatabase::addApplicationFont(":/fonts/NotoSansMono-Thin.ttf");
+  QString family = QFontDatabase::applicationFontFamilies(id).at(0);
+  QFont monospace(family);
+  ui_->console->setFont(monospace);
 
   connect(ui_->console, SIGNAL(command(QString)), this,
           SLOT(evaluate(QString)));
@@ -61,4 +67,8 @@ void ConsoleWidget::commandwithresults(QString command, QByteArray result) {
     ui_->console->insertPlainText("\n");
     ui_->console->promptWithoutResult();
   }
+}
+
+void ConsoleWidget::setConsoleStylesheetScrollbar(QString vscrollbar) {
+  ui_->console->verticalScrollBar()->setStyleSheet(vscrollbar);
 }

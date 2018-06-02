@@ -51,6 +51,7 @@ class CurrentPlaylistModel;
 class FileModel;
 class FancyTabWidget;
 class ConsoleWidget;
+class Theme;
 class QListView;
 class QTreeView;
 
@@ -74,6 +75,7 @@ class Player : public QWidget {
  private:
   Ui_Player *ui_;
   Application *app_;
+  Theme *theme_;
   QPoint dragPosition;
 
   MPDClient *mpdClient_;

@@ -2,82 +2,140 @@
 #define STYLESHEETPROPERTIES_H
 
 #include <QColor>
+#include <QFont>
 #include <QGradient>
-#include <QRect>
 
 namespace StyleSheetProperties {
 struct GlowEffect {
   // player glow effect
-  QColor glowColor;
-  uint glowRadius;
-  int glowXoffset;
-  int glowYoffset;
+  QColor color;
+  int radius;
+  int xOffset;
+  int yOffset;
 };
 
 struct Widget {
   // widget general
-  int widgetBorderRadius;
-  int widgetBorderThickness;
-  QColor widgetBorderColor;
-  QColor widgetBackgroundColor;
+  int borderRadius;
+  int borderThickness;
+  QColor borderColor;
+  QColor backgroundColor;
+};
+
+struct Dialog {
+  // widget general
+  int borderRadius;
+  int borderThickness;
+  QColor borderColor;
+  QColor backgroundColor;
+};
+
+struct VolumePopupWidget {
+  int blurPadding;
+  int edgeCurve;
+  int layoutPadding;
+  QColor backgroundColor;
+};
+
+struct Margin {
+  int top;
+  int right;
+  int bottom;
+  int left;
+};
+
+struct LinearGradient2 {
+  int x1;
+  int y1;
+  int x2;
+  int y2;
+  int startpos;
+  int stoppos;
+  QColor startColor;
+  QColor stopColor;
+};
+
+struct LinearGradient3 {
+  int x1;
+  int y1;
+  int x2;
+  int y2;
+  int startpos;
+  double midpos;
+  int stoppos;
+  QColor startColor;
+  QColor midColor;
+  QColor stopColor;
 };
 
 struct HorizontalSliderWidget {
   struct Groove {
-    int grooveBorderThickness;
-    QColor grooveBorderColor;
-    uint grooveHeight;
-    QLinearGradient grooveBackgroundGradiant;
-    int grooveMargin;
+    int borderThickness;
+    QColor borderColor;
+    int height;
+    LinearGradient2 backgroundGradiant;
+    Margin margin;
   } groove;
   struct Handle {
-    int handleBorderThickness;
-    QColor handleBorderColor;
-    int handleWidth;
-    int handleHeight;
-    QLinearGradient handleBackgroundGradiant;
-    int handleMarginX;
-    int handleMarginY;
+    int borderThickness;
+    QColor borderColor;
+    int width;
+    int height;
+    LinearGradient2 backgroundGradiant;
+    Margin margin;
   } handle;
   struct Subpage {
-    int subpageWidth;
-    QLinearGradient subpageBackgroundGradiant;
-    int subpageMarginX;
-    int subpageMarginY;
+    int width;
+    LinearGradient2 backgroundGradiant;
+    Margin margin;
   } subpage;
 };
 
 struct ListviewWidget {
-  int listviewBorderRadius;
-  int listviewBorderThickness;
-  QColor listviewBorderColor;
-  QColor listviewBackgroundColor;
+  int borderRadius;
+  int borderThickness;
+  QColor borderColor;
+  QColor backgroundColor;
+};
+
+struct TreeviewWidget {
+  int borderRadius;
+  QColor backgroundColor;
+};
+
+struct ConsoleWidget {
+  int borderRadius;
+  QColor backgroundColor;
 };
 
 struct VerticalScrollbar {
-  int verticalScrollbarBorderRadius;
-  int verticalScrollbarBorderThickness;
-  QColor verticalScrollbarBorderColor;
-  QColor verticalScrollbarBackgroundColor;
-  int verticalScrollbarWidth;
-  QRect verticalScrollbarMargin;
+  int borderRadius;
+  int borderThickness;
+  QColor borderColor;
+  QColor backgroundColor;
+  int width;
+  Margin margin;
   struct Handle {
-    int handleBorderRadius;
-    int handleBorderThickness;
-    QColor handleBorderColor;
-    QLinearGradient handleBackgroundGradiant;
-    int handleMinHeight;
+    int borderRadius;
+    int borderThickness;
+    QColor borderColor;
+    QColor backgroundColor;
+    int minHeight;
   } handle;
   struct Addline {
-    int addlineHeight;
+    LinearGradient3 backgroundGradiant;
+    int height;
   } addLine;
   struct Subline {
-    int sublineHeight;
+    int height;
   } subline;
 };
 
 struct LabelWidget {
-  QColor labelBackgroundColor;
+  QColor backgroundColor;
+  QColor foregroundColor;
+  QFont font;
+  int borderRadius;
 };
 
 }  // namespace StyleSheetProperties

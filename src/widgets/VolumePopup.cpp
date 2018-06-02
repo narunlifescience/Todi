@@ -18,30 +18,54 @@
 
 #include "VolumePopup.h"
 
-#include <QGraphicsDropShadowEffect>
 #include <QHBoxLayout>
+#include <QMouseEvent>
 #include <QPainter>
-#include <QSlider>
+#include <QStyleOptionSlider>
 
-const int VolumePopup::blur_padding = 4;
-const int VolumePopup::edge_curve = 6;
-const int VolumePopup::widget_layout_padding = 6;
+// Default values
+int VolumePopup::blur_padding = 4;
+int VolumePopup::edge_curve = 6;
+int VolumePopup::widget_layout_padding = 6;
 QColor VolumePopup::widget_color = QColor(20, 20, 20, 200);
-QColor VolumePopup::widget_shadow_effect_color = QColor(181, 185, 190);
+const int VolumePopup::delta_volume = 1;
+
+VolumeSlider::VolumeSlider(Qt::Orientation orientation, QWidget *parent)
+    : QSlider(orientation, parent) {}
+
+void VolumeSlider::mousePressEvent(QMouseEvent *event) {
+  Qt::MouseButton new_button = event->button();
+  if (event->button() == Qt::LeftButton) {
+    uint abs_buttons = static_cast<uint>(
+        style()->styleHint(QStyle::SH_Slider_AbsoluteSetButtons));
+    if (abs_buttons & Qt::LeftButton)
+      new_button = Qt::LeftButton;
+    else if (abs_buttons & Qt::MidButton)
+      new_button = Qt::MidButton;
+    else if (abs_buttons & Qt::RightButton)
+      new_button = Qt::RightButton;
+  }
+
+  QMouseEvent new_event(event->type(), event->pos(), new_button, new_button,
+                        event->modifiers());
+  QSlider::mousePressEvent(&new_event);
+
+  if (new_event.isAccepted()) event->accept();
+}
+
+void VolumeSlider::wheelEvent(QWheelEvent *event) {
+  (event->delta() > 0) ? emit deltaIncreaseVolume()
+                       : emit
+                         deltaDecreaseVolume();
+
+  event->accept();
+}
 
 VolumePopup::VolumePopup(QWidget *parent)
     : QFrame(parent,
              Qt::FramelessWindowHint | Qt::WindowSystemMenuHint | Qt::Popup),
-      slider(new QSlider(Qt::Horizontal)) {
+      slider_(new VolumeSlider(Qt::Horizontal, this)) {
   this->setAttribute(Qt::WA_TranslucentBackground, true);
-  QGraphicsDropShadowEffect *shadow_effect =
-      new QGraphicsDropShadowEffect(this);
-  shadow_effect->setColor(widget_shadow_effect_color);
-  shadow_effect->setBlurRadius(blur_padding);
-  shadow_effect->setXOffset(0);
-  shadow_effect->setYOffset(0);
-  setGraphicsEffect(shadow_effect);
-
   this->setFixedHeight(sizeHint().height());
   this->setFixedWidth(sizeHint().width());
   drawSliderWidget();
@@ -52,13 +76,17 @@ VolumePopup::VolumePopup(QWidget *parent)
       widget_layout_padding + blur_padding,
       widget_layout_padding + blur_padding,
       (height() / 6) + blur_padding + widget_layout_padding);
-  layout->addWidget(slider);
+  layout->addWidget(slider_);
 
-  slider->setMaximum(0);
-  slider->setMaximum(100);
+  slider_->setMaximum(0);
+  slider_->setMaximum(100);
 
-  connect(slider, &QSlider::valueChanged, this,
+  connect(slider_, &VolumeSlider::valueChanged, this,
           &VolumePopup::volumePopupSliderChanged);
+  connect(slider_, &VolumeSlider::deltaIncreaseVolume, this,
+          &VolumePopup::deltaIncreaseVolume);
+  connect(slider_, &VolumeSlider::deltaDecreaseVolume, this,
+          &VolumePopup::deltaDecreaseVolume);
 }
 
 VolumePopup::~VolumePopup() {}
@@ -69,17 +97,24 @@ void VolumePopup::setWidgetColor(QColor color) { widget_color = color; }
 
 QColor VolumePopup::getWidgetColor() { return widget_color; }
 
-QColor VolumePopup::getWidgetShadowEffectColor() {
-  return widget_shadow_effect_color;
+void VolumePopup::redrawSliderWidget() { drawSliderWidget(); }
+
+void VolumePopup::setVolumeSliderStylesheet(QString stylesheet) {
+  slider_->setStyleSheet(stylesheet);
 }
 
-void VolumePopup::setVolumeSlider(int vol) { slider->setValue(vol); }
+void VolumePopup::setVolumeSlider(int vol) { slider_->setValue(vol); }
 
-int VolumePopup::getVolumeSlider() { return slider->value(); }
+int VolumePopup::getVolumeSlider() { return slider_->value(); }
 
 void VolumePopup::paintEvent(QPaintEvent *) {
   QPainter painter(this);
   painter.drawPixmap(0, 0, pixmap_);
+}
+
+void VolumePopup::wheelEvent(QWheelEvent *event) {
+  (event->delta() > 0) ? deltaIncreaseVolume() : deltaDecreaseVolume();
+  event->accept();
 }
 
 void VolumePopup::drawSliderWidget() {
@@ -116,4 +151,12 @@ void VolumePopup::drawSliderWidget() {
   painter.setPen(Qt::NoPen);
   painter.drawPath(paintPath);
   update();
+}
+
+void VolumePopup::deltaIncreaseVolume() {
+  slider_->setValue(slider_->value() + delta_volume);
+}
+
+void VolumePopup::deltaDecreaseVolume() {
+  slider_->setValue(slider_->value() - delta_volume);
 }

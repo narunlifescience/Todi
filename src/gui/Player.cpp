@@ -53,6 +53,7 @@
 #include "../core/application.h"
 #include "AboutDialog.h"
 #include "MpdConnectionDialog.h"
+#include "beautify/theme.h"
 #include "globals.h"
 #include "systemtrayicon.h"
 #include "widgets/TrackSlider.h"
@@ -79,6 +80,7 @@ Player::Player(Application *app, QWidget *parent)
                           Qt::SubWindow),
       ui_(new Ui_Player),
       app_(app),
+      theme_(new Theme(this)),
       mpdClient_(app_->mpdClient()),
       dataAccess_(app_->mpdClient()->getSharedMPDdataPtr()),
       playbackCtrlr_(app_->mpdClient()->getSharedPlaybackControllerPtr()),
@@ -120,21 +122,90 @@ Player::Player(Application *app, QWidget *parent)
       collapsedHeight_(0),
       fullHeight_(0) {
   ui_->setupUi(this);
-
-  IconLoader::init();
-  IconLoader::lumen_ = IconLoader::isLight(Qt::black);
-
   this->setAttribute(Qt::WA_TranslucentBackground, true);
   setWindowTitle(QApplication::applicationName());
   setWindowIcon(QIcon(":icons/todi.svg"));
 
-  QGraphicsDropShadowEffect *effect = new QGraphicsDropShadowEffect(this);
-  effect->setColor(QColor(181, 185, 190));
-  effect->setBlurRadius(constBlurRadius_);
-  effect->setXOffset(0);
-  effect->setYOffset(0);
-  setGraphicsEffect(effect);
-  this->setGraphicsEffect(effect);
+  // initialize graphics effects here before defining Theme connections
+  QGraphicsDropShadowEffect *playerShadowEffect =
+      new QGraphicsDropShadowEffect(this);
+  QGraphicsDropShadowEffect *volumepopupShadowEffect =
+      new QGraphicsDropShadowEffect(this);
+
+  // Setting Stylesheets & glow effects (make connections first & then
+  // initialize default theme before doing anything)
+  connect(theme_, &Theme::themePlayerGlowChanged,
+          [&](StyleSheetProperties::GlowEffect *playerGlowEffect) {
+            playerShadowEffect->setColor(playerGlowEffect->color);
+            playerShadowEffect->setBlurRadius(playerGlowEffect->radius);
+            playerShadowEffect->setXOffset(playerGlowEffect->xOffset);
+            playerShadowEffect->setYOffset(playerGlowEffect->yOffset);
+          });
+  connect(
+      theme_, &Theme::themeVolumepopupGlowChanged,
+      [&](StyleSheetProperties::GlowEffect *volumepopupGlowEffect) {
+        volumepopupShadowEffect->setColor(volumepopupGlowEffect->color);
+        volumepopupShadowEffect->setBlurRadius(volumepopupGlowEffect->radius);
+        volumepopupShadowEffect->setXOffset(volumepopupGlowEffect->xOffset);
+        volumepopupShadowEffect->setYOffset(volumepopupGlowEffect->yOffset);
+      });
+  connect(theme_, &Theme::themePlayerWidgetChanged,
+          [&](QString stylesheet) { mainWidget->setStyleSheet(stylesheet); });
+  connect(theme_, &Theme::themeVolumepopupWidgetChanged,
+          [&](StyleSheetProperties::VolumePopupWidget *volumepopupWidget) {
+            VolumePopup::blur_padding = volumepopupWidget->blurPadding;
+            VolumePopup::edge_curve = volumepopupWidget->edgeCurve;
+            VolumePopup::widget_layout_padding =
+                volumepopupWidget->layoutPadding;
+            volume_popup->setWidgetColor(volumepopupWidget->backgroundColor);
+            volume_popup->redrawSliderWidget();
+          });
+  connect(theme_, &Theme::themeTrackSliderWidgetChanged,
+          [&](QString stylesheet) { track_slider->setStyleSheet(stylesheet); });
+  connect(theme_, &Theme::themeVolumeSliderWidgetChanged, volume_popup,
+          &VolumePopup::setVolumeSliderStylesheet);
+  connect(theme_, &Theme::themeVscrollbarChanged, [&](QString stylesheet) {
+    folder_view_->verticalScrollBar()->setStyleSheet(stylesheet);
+    metadata_widget->verticalScrollBar()->setStyleSheet(stylesheet);
+    console_widget_->setConsoleStylesheetScrollbar(stylesheet);
+    playlist_view->verticalScrollBar()->setStyleSheet(stylesheet);
+  });
+  connect(
+      theme_, &Theme::themeCurrentSongMetadataLabelWidgetChanged,
+      [&](QString stylesheet) { metadata_widget->setStyleSheet(stylesheet); });
+  connect(theme_, &Theme::themeTimeLabelWidgetChanged,
+          [&](QString stylesheet) { timer_label->setStyleSheet(stylesheet); });
+  connect(
+      theme_, &Theme::themePlaylistviewWidgetChanged,
+      [&](QString stylesheet) { playlist_view->setStyleSheet(stylesheet); });
+  connect(theme_, &Theme::themeFolderviewWidgetChanged,
+          [&](QString stylesheet) { folder_view_->setStyleSheet(stylesheet); });
+  connect(theme_, &Theme::themeConsoleWidgetChanged, [&](QString stylesheet) {
+    console_widget_->setStyleSheet(stylesheet);
+  });
+  theme_->setTheme(Theme::Themes::TodiDark);
+  // Button stylesheet acordingly
+  close_pushButton->setStyleSheet("QPushButton{border: none;}");
+  expand_collapse_PushButton->setStyleSheet("QPushButton{border: none;}");
+  previous_pushButton->setStyleSheet("QPushButton{border: none;}");
+  play_pause_pushButton->setStyleSheet("QPushButton{border: none;}");
+  next_pushButton->setStyleSheet("QPushButton{border: none;}");
+  volume_pushButton->setStyleSheet("QPushButton{border: none;}");
+  search_pushButton->setStyleSheet("QPushButton{border: none;}");
+  playlist_pushButton->setStyleSheet("QPushButton{border: none;}");
+  fancy_tab_widget->setStyleSheet(
+      ".QWidget{border-radius: 0px; background-color: rgba(155, 70, 70, 225); "
+      "border: 0px solid #5c5c5c;}");
+
+  // set all graphics effects here
+  setGraphicsEffect(playerShadowEffect);
+  this->setGraphicsEffect(playerShadowEffect);
+  volume_popup->setGraphicsEffect(volumepopupShadowEffect);
+
+  // initialize iconLoader values
+  IconLoader::init();
+  IconLoader::lumen_ = IconLoader::isLight(Qt::black);
+
   qInfo() << "Starting Todi application...";
 
   // Set icons
@@ -170,69 +241,6 @@ Player::Player(Application *app, QWidget *parent)
   setContextMenuPolicy(Qt::ActionsContextMenu);
 
   quitAction->setIcon(IconLoader::load("edit-close", IconLoader::LightDark));
-
-  // Theme adjust acordingly
-  mainWidget->setStyleSheet(
-      ".QWidget{border-radius: 3px; background-color: rgba(20, 20, 20, 225); "
-      "border: 0px solid #5c5c5c;}");
-  track_slider->setStyleSheet(
-      ".TrackSlider::groove:horizontal { border: 0px solid #999999; height: "
-      "3px; "
-      "background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 #B1B1B1, "
-      "stop:1 #c4c4c4); "
-      "margin: 0px 0; } .TrackSlider::handle:horizontal {"
-      "background: qlineargradient(x1:0, y1:0, x2:1, y2:1, stop:0 #eff0f1, "
-      "stop:1 #eff0f1);"
-      "border: 0px solid #5c5c5c;width: 2px;margin: -2px 0; }"
-      ".TrackSlider::sub-page:horizontal {"
-      "background: qlineargradient(x1: 0, y1: 0,    x2: 0, y2: 1,"
-      "stop: 0 #3daee9, stop: 1 #3daee9); width: 3px; margin: 0px 0;}");
-  close_pushButton->setStyleSheet("QPushButton{border: none;}");
-  expand_collapse_PushButton->setStyleSheet("QPushButton{border: none;}");
-  previous_pushButton->setStyleSheet("QPushButton{border: none;}");
-  play_pause_pushButton->setStyleSheet("QPushButton{border: none;}");
-  next_pushButton->setStyleSheet("QPushButton{border: none;}");
-  volume_pushButton->setStyleSheet("QPushButton{border: none;}");
-  search_pushButton->setStyleSheet("QPushButton{border: none;}");
-  playlist_pushButton->setStyleSheet("QPushButton{border: none;}");
-  timer_label->setStyleSheet("QLabel{color:rgba(200, 200, 200, 200)}");
-  playlist_view->setStyleSheet(
-      "QListView {background:rgba(80, 80, 80, 100); border-radius: "
-      "3px;}");
-  // playlist_view->setStyleSheet("QListView {border-radius: 3px;}");
-  playlist_view->verticalScrollBar()->setStyleSheet(
-      "QScrollBar:vertical {"
-      "    border: 0px;"
-      "border-radius: 3px;"
-      "    background:rgba(200, 200, 200, 100);"
-      "    width:6px;    "
-      "    margin: 0px 0px 0px 0px;"
-      "}"
-      "QScrollBar::handle:vertical {"
-      "border-radius: 3px;"
-      "    background: rgb(245, 245, 245, 200);"
-      "    min-height: 20px;"
-      "}"
-      "QScrollBar::add-line:vertical {"
-      "    background: qlineargradient(x1:0, y1:0, x2:1, y2:0,"
-      "    stop: 0 rgb(32, 47, 130), stop: 0.5 rgb(245, 245, 245),  stop:1 "
-      "rgb(32, 47, 130));"
-      "    height: 0px;"
-      "    subcontrol-position: bottom;"
-      "    subcontrol-origin: margin;"
-      "}"
-      "QScrollBar::sub-line:vertical {"
-      /*"    background: qlineargradient(x1:0, y1:0, x2:1, y2:0,"
-      "    stop: 0  rgb(32, 47, 130), stop: 0.5 rgb(32, 47, 130),  stop:1 "
-      "rgb(32, 47, 130));"*/
-      "    height: 0 px;"
-      /*"    subcontrol-position: top;"
-      "    subcontrol-origin: margin;"*/
-      "}"
-        );
-  fancy_tab_widget->setStyleSheet(
-      ".QWidget{border-radius: 0px; background-color: rgba(155, 70, 70, 225); "
-      "border: 0px solid #5c5c5c;}");
 
   playlist_view->setItemDelegate(new CurrentPlaylistViewDeligate());
   playlist_view->setSelectionMode(QAbstractItemView::ExtendedSelection);
@@ -339,6 +347,7 @@ Player::Player(Application *app, QWidget *parent)
   // update folder browse view
   filemodel_ = new FileModel(folder_view_, dataAccess_->getListallValues());
   folder_view_->setModel(filemodel_);
+  folder_view_->header()->hide();
 
   this->setMouseTracking(true);
 

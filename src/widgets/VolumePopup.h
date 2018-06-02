@@ -20,35 +20,55 @@
 #define VOLUMEPOPUP_H
 
 #include <QFrame>
+#include <QSlider>
 
-class QSlider;
-class QGraphicsDropShadowEffect;
+class VolumeSlider : public QSlider {
+  Q_OBJECT
+ public:
+  VolumeSlider(Qt::Orientation orientation, QWidget* parent = nullptr);
+
+ signals:
+  void deltaIncreaseVolume();
+  void deltaDecreaseVolume();
+
+ protected:
+  void mousePressEvent(QMouseEvent* event);
+  void wheelEvent(QWheelEvent* event);
+};
 
 class VolumePopup : public QFrame {
   Q_OBJECT
 
  public:
-  VolumePopup(QWidget *parent = nullptr);
+  VolumePopup(QWidget* parent = nullptr);
   ~VolumePopup();
   QSize sizeHint() const;
   void setWidgetColor(QColor color);
   QColor getWidgetColor();
-  QColor getWidgetShadowEffectColor();
+  void redrawSliderWidget();
   void setVolumeSlider(int vol);
   int getVolumeSlider();
-  static const int blur_padding;
+  static int blur_padding;
+  static int edge_curve;
+  static int widget_layout_padding;
+
+ public slots:
+  void setVolumeSliderStylesheet(QString stylesheet);
 
  protected:
-  void paintEvent(QPaintEvent *);
+  void paintEvent(QPaintEvent*);
+  void wheelEvent(QWheelEvent* event);
+
+ private slots:
+  void deltaIncreaseVolume();
+  void deltaDecreaseVolume();
 
  private:
   void drawSliderWidget();
-  QSlider *slider;
+  VolumeSlider* slider_;
   QPixmap pixmap_;
-  static const int edge_curve;
-  static const int widget_layout_padding;
   static QColor widget_color;
-  static QColor widget_shadow_effect_color;
+  static const int delta_volume;
 
  signals:
   void volumePopupSliderChanged(quint8 value);

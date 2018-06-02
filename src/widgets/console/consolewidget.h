@@ -42,6 +42,7 @@ class ConsoleWidget : public QWidget {
 
  public slots:
   void commandwithresults(QString command, QByteArray result);
+  void setConsoleStylesheetScrollbar(QString vscrollbar);
 
  private:
   Ui_ConsoleWidget *ui_;

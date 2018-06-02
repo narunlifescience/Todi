@@ -20,13 +20,17 @@
 #include "ui_AboutDialog.h"
 
 AboutDialog::AboutDialog(QWidget *parent)
-    : QDialog(parent), ui_(new Ui_AboutDialog) {
+    : QDialog(parent, Qt::FramelessWindowHint | Qt::WindowStaysOnTopHint |
+                          Qt::SubWindow),
+      ui_(new Ui_AboutDialog) {
+  setAttribute(Qt::WA_TranslucentBackground, true);
   ui_->setupUi(this);
   ui_->titleLabel->setText("Todi");
   QPixmap logo = QPixmap(":/icons/nocover.svg");
   logo = logo.scaled(48, 48);
   ui_->logoLabel->setPixmap(logo);
-
+  setStyleSheet(".QWidget{border-radius: 3px; background-color: "
+                "rgba(20, 20, 20, 225); border: 0px;}");
 }
 
 AboutDialog::~AboutDialog() { delete ui_; }

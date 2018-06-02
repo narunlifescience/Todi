@@ -95,10 +95,6 @@ void TrackSlider::mouseMoveEvent(QMouseEvent *event) {
 }
 
 void TrackSlider::wheelEvent(QWheelEvent *event) {
-  if (event->delta() < 0) {
-    emit seekForward();
-  } else {
-    emit seekBackward();
-  }
+  (event->delta() > 0) ? emit seekForward() : emit seekBackward();
   event->accept();
 }

@@ -55,7 +55,10 @@ HEADERS += core/application.h \
            widgets/stylehelper.h \
            widgets/qt_blurimage.h \
            widgets/metadatawidget.h \
-    beautify/stylesheetproperties.h
+    beautify/stylesheetproperties.h \
+    beautify/theme.h \
+    lib/mpdlibrarymodel.h \
+    models/librarymodel.h
 
 FORMS +=   gui/AboutDialog.ui \
            gui/MpdConnectionDialog.ui \
@@ -96,4 +99,7 @@ SOURCES += main.cpp \
            widgets/mainwidget.cpp \
            widgets/tabbar.cpp \
            widgets/stylehelper.cpp \
-           widgets/metadatawidget.cpp
+           widgets/metadatawidget.cpp \
+    beautify/theme.cpp \
+    lib/mpdlibrarymodel.cpp \
+    models/librarymodel.cpp
