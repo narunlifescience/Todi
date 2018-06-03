@@ -67,6 +67,7 @@
 #include "currentplaylistmodel.h"
 #include "currentplaylistview.h"
 #include "models/filemodel.h"
+#include "models/librarymodel.h"
 #include "mpdclient.h"
 #include "mpddata.h"
 #include "playbackcontroller.h"
@@ -114,6 +115,7 @@ Player::Player(Application *app, QWidget *parent)
       console_widget_(new ConsoleWidget()),
       playlist_view(new QListView(this)),
       folder_view_(new QTreeView(this)),
+      library_view_(new QTreeView(this)),
       resize_status(false),
       trayIcon(nullptr),
       consumePingpong(true),
@@ -169,6 +171,7 @@ Player::Player(Application *app, QWidget *parent)
     metadata_widget->verticalScrollBar()->setStyleSheet(stylesheet);
     console_widget_->setConsoleStylesheetScrollbar(stylesheet);
     playlist_view->verticalScrollBar()->setStyleSheet(stylesheet);
+    library_view_->verticalScrollBar()->setStyleSheet(stylesheet);
   });
   connect(
       theme_, &Theme::themeCurrentSongMetadataLabelWidgetChanged,
@@ -178,6 +181,8 @@ Player::Player(Application *app, QWidget *parent)
   connect(
       theme_, &Theme::themePlaylistviewWidgetChanged,
       [&](QString stylesheet) { playlist_view->setStyleSheet(stylesheet); });
+  connect(theme_, &Theme::themeLibraryviewWidgetChanged,
+          [&](QString stylesheet) { library_view_->setStyleSheet(stylesheet); });
   connect(theme_, &Theme::themeFolderviewWidgetChanged,
           [&](QString stylesheet) { folder_view_->setStyleSheet(stylesheet); });
   connect(theme_, &Theme::themeConsoleWidgetChanged, [&](QString stylesheet) {
@@ -307,6 +312,10 @@ Player::Player(Application *app, QWidget *parent)
       IconLoader::load("view-media-currentlist", IconLoader::LightDark),
       "Qeue");
   fancy_tab_widget->AddTab(
+      library_view_,
+      IconLoader::load("view-media-playlist", IconLoader::LightDark),
+      "Library");
+  fancy_tab_widget->AddTab(
       folder_view_,
       IconLoader::load("view-media-folder", IconLoader::LightDark), "Folders");
   fancy_tab_widget->AddTab(
@@ -324,6 +333,7 @@ Player::Player(Application *app, QWidget *parent)
   hboxfancy->addWidget(fancy_tab_widget, 0);
   hboxfancy->addWidget(stack_widget, 1);
   stack_widget->addWidget(playlist_view);
+  stack_widget->addWidget(library_view_);
   stack_widget->addWidget(folder_view_);
   stack_widget->addWidget(metadata_widget);
   stack_widget->addWidget(console_widget_);
@@ -348,6 +358,9 @@ Player::Player(Application *app, QWidget *parent)
   filemodel_ = new FileModel(folder_view_, dataAccess_->getListallValues());
   folder_view_->setModel(filemodel_);
   folder_view_->header()->hide();
+
+  librarymodel_ = new LibraryModel(library_view_);
+  library_view_->setModel(librarymodel_);
 
   this->setMouseTracking(true);
 
@@ -517,6 +530,8 @@ Player::Player(Application *app, QWidget *parent)
   dataAccess_->getMPDStats();
   dataAccess_->getMPDListall();
   dataAccess_->getMPDPlaylistInfo();
+  dataAccess_->getMPDLibrary();
+  librarymodel_->updateLibrary(dataAccess_->getLibraryValues());
 }
 
 QSize Player::sizeHint() const { return QSize(100, 40); }

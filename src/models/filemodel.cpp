@@ -19,6 +19,7 @@
  */
 
 #include "filemodel.h"
+#include "../beautify/IconLoader.h"
 #include "../lib/mpdfilemodel.h"
 
 #include <QCommonStyle>
@@ -96,7 +97,9 @@ QVariant FileModel::data(const QModelIndex &index, int role) const {
   if (role == Qt::DecorationRole) {
     QCommonStyle style;
     if (item->type() == Item::Type::TypeFolder) {
-      return style.standardIcon(QStyle::SP_DirIcon);
+      return IconLoader::load("view-media-folder",
+                              IconLoader::IconMode::LightDark);
+
     } else if (item->type() == Item::Type::TypeFile) {
       return style.standardIcon(QStyle::SP_FileIcon);
     }

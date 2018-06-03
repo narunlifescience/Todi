@@ -24,6 +24,7 @@ class Theme : public QObject {
   void themeCurrentSongMetadataLabelWidgetChanged(QString stylesheet);
   void themeTimeLabelWidgetChanged(QString stylesheet);
   void themePlaylistviewWidgetChanged(QString stylesheet);
+  void themeLibraryviewWidgetChanged(QString stylesheet);
   void themeFolderviewWidgetChanged(QString stylesheet);
   void themeConsoleWidgetChanged(QString stylesheet);
 
@@ -41,6 +42,7 @@ class Theme : public QObject {
   void changeCurrentSongMetadataLabelWidgetTheme();
   void changeTimeLabelWidgetTheme();
   void changePlaylistviewWidgetTheme();
+  void changeLibraryviewWidgetTheme();
   void changeFolderviewWidgetTheme();
   void changeConsoleWidgetTheme();
 
@@ -55,6 +57,7 @@ class Theme : public QObject {
   StyleSheetProperties::LabelWidget *currentSongMetadataWidget_;
   StyleSheetProperties::LabelWidget *timerLabelWidget_;
   StyleSheetProperties::ListviewWidget *playlistviewWidget_;
+  StyleSheetProperties::TreeviewWidget *libraryviewWidget_;
   StyleSheetProperties::TreeviewWidget *folderviewWidget_;
   StyleSheetProperties::ConsoleWidget *consoleWidget_;
   StyleSheetProperties::VerticalScrollbar *vScrollbar_;

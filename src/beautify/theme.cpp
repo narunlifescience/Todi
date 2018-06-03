@@ -15,6 +15,7 @@ Theme::Theme(QObject *parent)
       currentSongMetadataWidget_(new LabelWidget),
       timerLabelWidget_(new LabelWidget),
       playlistviewWidget_(new ListviewWidget),
+      libraryviewWidget_(new TreeviewWidget),
       folderviewWidget_(new TreeviewWidget),
       consoleWidget_(new ConsoleWidget),
       vScrollbar_(new VerticalScrollbar) {}
@@ -193,6 +194,10 @@ void Theme::initializeTodidark() {
   playlistviewWidget_->backgroundColor = QColor(80, 80, 80, 100);
   playlistviewWidget_->borderRadius = 3;
   changePlaylistviewWidgetTheme();
+
+  libraryviewWidget_->backgroundColor = QColor(80, 80, 80, 100);
+  libraryviewWidget_->borderRadius = 3;
+  changeLibraryviewWidgetTheme();
 
   folderviewWidget_->backgroundColor = QColor(80, 80, 80, 100);
   folderviewWidget_->borderRadius = 3;
@@ -443,6 +448,18 @@ void Theme::changePlaylistviewWidgetTheme() {
           .arg(playlistviewWidget_->backgroundColor.alpha())
           .arg(playlistviewWidget_->borderRadius);
   emit themePlaylistviewWidgetChanged(stylesheet);
+}
+
+void Theme::changeLibraryviewWidgetTheme() {
+  QString stylesheet =
+      QString(
+          "QTreeView {background:rgba(%1, %2, %3, %4); border-radius: %5px;}")
+          .arg(libraryviewWidget_->backgroundColor.red())
+          .arg(libraryviewWidget_->backgroundColor.green())
+          .arg(libraryviewWidget_->backgroundColor.blue())
+          .arg(libraryviewWidget_->backgroundColor.alpha())
+          .arg(libraryviewWidget_->borderRadius);
+  emit themeLibraryviewWidgetChanged(stylesheet);
 }
 
 void Theme::changeFolderviewWidgetTheme() {

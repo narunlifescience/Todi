@@ -25,6 +25,7 @@ const QByteArray MPDdata::statsCommand = "stats";
 const QByteArray MPDdata::songMetadataCommand = "currentsong";
 const QByteArray MPDdata::playlistinfoCommand = "playlistinfo";
 const QByteArray MPDdata::listallCommand = "listall";
+const QByteArray MPDdata::listallinfoCommand = "listallinfo";
 
 MPDdata::MPDdata(QObject* parent, std::shared_ptr<MPDSocket> mpdSocket)
     : QObject(parent),
@@ -33,7 +34,8 @@ MPDdata::MPDdata(QObject* parent, std::shared_ptr<MPDSocket> mpdSocket)
       statsValues_(new MPDStatsValues),
       songMetadataValues_(new MPDSongMetadata),
       playlistQueue_(new QList<MPDSongMetadata*>()),
-      rootitem_(new RootItem(QString(""))) {}
+      rootitem_(new RootItem(QString(""))),
+      libraryItemArtistValues_(new QList<MusicLibraryItemArtist*>()) {}
 
 MPDdata::~MPDdata() {
   delete statusValues_;
@@ -85,6 +87,17 @@ void MPDdata::getMPDListall() {
     rootitem_->clear();
     MPDdataParser::parseFolderView(mpdlistall.first, rootitem_);
     emit MPDListallUpdated(rootitem_);
+  }
+}
+
+void MPDdata::getMPDLibrary() {
+  QPair<QByteArray, bool> mpdlibrary(mpdSocket_->sendCommand(listallinfoCommand));
+  if (mpdlibrary.second) {
+    // delete all childs from all depth
+    libraryItemArtistValues_->clear();
+    MPDdataParser::parseLibraryItems(mpdlibrary.first,
+                                     libraryItemArtistValues_);
+    emit MPDLibraryUpdated(libraryItemArtistValues_);
   }
 }
 
@@ -202,3 +215,7 @@ QList<MPDSongMetadata*>* MPDdata::getPlaylistinfoValues() const {
 }
 
 RootItem* MPDdata::getListallValues() const { return rootitem_; }
+
+QList<MusicLibraryItemArtist*>* MPDdata::getLibraryValues() const {
+  return libraryItemArtistValues_;
+}

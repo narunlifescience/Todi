@@ -49,6 +49,7 @@ class MetadataWidget;
 class CurrentCoverArtLabel;
 class CurrentPlaylistModel;
 class FileModel;
+class LibraryModel;
 class FancyTabWidget;
 class ConsoleWidget;
 class Theme;
@@ -115,8 +116,10 @@ class Player : public QWidget {
   ConsoleWidget *console_widget_;
   QListView *playlist_view;
   QTreeView *folder_view_;
+  QTreeView *library_view_;
   CurrentPlaylistModel *currentPlaylistModel_;
   FileModel *filemodel_;
+  LibraryModel *librarymodel_;
   bool resize_status;
   SystemTrayIcon *trayIcon;
   QMenu *trayIconMenu;

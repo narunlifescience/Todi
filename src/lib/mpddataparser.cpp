@@ -1,5 +1,7 @@
 #include "mpddataparser.h"
 #include "mpdfilemodel.h"
+#include "mpdlibrarymodel.h"
+#include <QDebug>
 
 // MPD status look up keys
 static const QByteArray statusVolumeKey("volume: ");
@@ -274,6 +276,73 @@ void MPDdataParser::parseFolderView(const QByteArray &data,
                          ->createDirectory(parts.at(parts.size() - 1));
 
       currentDirList = parts;
+    }
+  }
+}
+
+void MPDdataParser::parseLibraryItems(
+    const QByteArray &data, QList<MusicLibraryItemArtist *> *artists) {
+  QList<QByteArray> currentItem;
+  MusicLibraryItemArtist *artistItem = nullptr;
+  MusicLibraryItemAlbum *albumItem = nullptr;
+  MusicLibraryItemSong *songItem = nullptr;
+  MPDSongMetadata *currentSong = nullptr;
+  bool found = false;
+
+  QList<QByteArray> lines = data.split('\n');
+  int amountOfLines = lines.size();
+
+  for (int i = 0; i < amountOfLines; i++) {
+    currentItem << lines.at(i);
+    if (i == lines.size() - 1 || lines.at(i + 1).startsWith("file:")) {
+          //qWarning () << lines.at(i);
+      currentSong = new MPDSongMetadata;
+      parseSongMetadata(currentItem, currentSong);
+      currentItem.clear();
+
+      int amountOfArtists = artists->size();
+
+      // Check if artist already exists
+      for (int i = 0; i < amountOfArtists; i++) {
+        if (artists->at(i)->data(0) == currentSong->artist) {
+          artistItem = static_cast<MusicLibraryItemArtist *>(artists->at(i));
+          found = true;
+        }
+      }
+
+      if (!found) {
+        artistItem = new MusicLibraryItemArtist(currentSong->artist);
+        artists->append(artistItem);
+      }
+
+      found = false;
+
+      int amountOfAlbums = artistItem->childCount();
+
+      // Check if album already exists
+      for (int i = 0; i < amountOfAlbums; i++) {
+        if (artistItem->child(i)->data(0) == currentSong->album) {
+          albumItem =
+              static_cast<MusicLibraryItemAlbum *>(artistItem->child(i));
+          found = true;
+        }
+      }
+
+      if (!found) {
+        albumItem = new MusicLibraryItemAlbum(currentSong->album, artistItem);
+        artistItem->appendChild(albumItem);
+      }
+
+      found = false;
+
+      // Add song to album (possibly in track order)
+      songItem = new MusicLibraryItemSong(currentSong->title, albumItem);
+      songItem->setFile(currentSong->file);
+      songItem->setTrack(currentSong->track);
+      songItem->setDisc(currentSong->disc);
+      albumItem->appendChild(songItem);
+
+      delete currentSong;
     }
   }
 }

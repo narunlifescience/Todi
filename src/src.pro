@@ -58,7 +58,8 @@ HEADERS += core/application.h \
     beautify/stylesheetproperties.h \
     beautify/theme.h \
     lib/mpdlibrarymodel.h \
-    models/librarymodel.h
+    models/librarymodel.h \
+    widgets/iconbutton.h
 
 FORMS +=   gui/AboutDialog.ui \
            gui/MpdConnectionDialog.ui \
@@ -102,4 +103,5 @@ SOURCES += main.cpp \
            widgets/metadatawidget.cpp \
     beautify/theme.cpp \
     lib/mpdlibrarymodel.cpp \
-    models/librarymodel.cpp
+    models/librarymodel.cpp \
+    widgets/iconbutton.cpp
